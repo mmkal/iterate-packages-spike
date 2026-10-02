@@ -18,3 +18,5 @@ This repo is a read-only copy of `packages/` and `configs/` from iterate's own r
 - Have a fix in mind? Push it to a fork and link the compare view in an issue. Pull requests here would be overwritten by the next copy.
 
 This README lives in iterate's repo at `copybara/packages/README.md`.
+
+Spike copy, recorded loads 2026-10-02.
