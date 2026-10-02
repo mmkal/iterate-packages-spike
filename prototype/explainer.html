@@ -184,6 +184,54 @@
     position: relative;
     min-width: 0;
   }
+  details.shape {
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    background: var(--surface);
+    min-width: 0;
+  }
+  details.shape > summary {
+    cursor: pointer;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 14px;
+    padding: 14px 16px;
+  }
+  details.shape > summary {
+    list-style: none;
+  }
+  details.shape > summary::-webkit-details-marker {
+    display: none;
+  }
+  /* the disclosure chevron: a flex summary drops the browser's own marker */
+  details.shape > summary::before {
+    content: "▸";
+    color: var(--accent);
+    display: inline-block;
+    width: 1em;
+    transition: transform 0.15s;
+  }
+  details.shape[open] > summary::before {
+    transform: rotate(90deg);
+  }
+  details.shape[open] > summary {
+    border-bottom: 1px solid var(--rule);
+  }
+  .shape-name {
+    font: 600 17px/1.3 var(--display);
+  }
+  .shape-hint {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  details.shape > p,
+  details.shape > .copyable {
+    margin: 14px 16px;
+  }
+  details.shape > .copyable {
+    margin-bottom: 16px;
+  }
   section > *,
   header > * {
     min-width: 0;
@@ -684,16 +732,48 @@
     <div class="eyebrow">1 · The page</div>
     <h2>What the agent writes</h2>
     <p>
-      One stylesheet and two imports. <code>page</code> gives the page React's API and
-      <code>html</code>, a JSX-like tag that needs no compiler. This is the whole file: save it
-      anywhere and open it while the prototype runs on <code>localhost:8797</code>. In production
-      the URLs would start <code>https://esm.iterate.com/</code> and name
-      <code>repository=iterate/packages</code>.
+      Two shapes of the same page. Each is a whole file: save it anywhere and open it while the
+      prototype runs on <code>localhost:8797</code>. In production the URLs would start
+      <code>https://esm.iterate.com/</code> and name <code>repository=iterate/packages</code>.
     </p>
-    <div class="copyable">
-      <button type="button" class="secondary copy" id="copy-page">Copy the file</button>
-      <pre class="code" id="page-source"></pre>
-    </div>
+    <details class="shape" open>
+      <summary>
+        <span class="shape-name">Full URLs, no import map</span>
+        <span class="shape-hint">One stylesheet, two imports, nothing to set up</span>
+      </summary>
+      <p>
+        Every import is a full esm.iterate.com URL. ui's <code>page</code> entry gives the page
+        React's API and <code>html</code>, a JSX-like tag that needs no compiler, from the same React
+        the components use.
+      </p>
+      <div class="copyable">
+        <button type="button" class="secondary copy" data-copy="plain">Copy the file</button>
+        <pre class="code" id="source-plain"></pre>
+      </div>
+    </details>
+    <details class="shape">
+      <summary>
+        <span class="shape-name">An import map, bare imports</span>
+        <span class="shape-hint">Imports read like normal code; other React libraries can join</span>
+      </summary>
+      <p>
+        An inline <code>&lt;script type="importmap"&gt;</code> says where each name comes from, so the
+        page imports <code>react</code> and <code>@iterate-com/ui/…</code> by name. <code>react</code>,
+        <code>react-dom/client</code> and <code>react/jsx-runtime</code> point at ui's own React. A
+        React library from esm.sh, loaded with <code>?external=react</code> (react-query here), imports
+        that same React: its <code>useQuery</code> runs beside ContextView with one React on the page.
+      </p>
+      <p>
+        One line per entry. With query-parameter URLs, a single <code>"@iterate-com/ui/"</code> line
+        can't cover the whole package: the browser resolves the rest of the name as a relative URL,
+        which drops the query, and refuses it ("blocked due to backtracking"). A path-shaped URL
+        would let one line map all of ui.
+      </p>
+      <div class="copyable">
+        <button type="button" class="secondary copy" data-copy="importmap">Copy the file</button>
+        <pre class="code" id="source-importmap"></pre>
+      </div>
+    </details>
   </section>
 
   <section id="load">
@@ -861,24 +941,28 @@ Uncaught TypeError: Cannot read properties of null (reading 'useState')
 
     // ── 1. the page's source, as an agent would write it ──
     const ui = (path) => `https://esm.iterate.com/@iterate-com/ui?repository=iterate/packages&ref=main&path=${path}`;
-    // the file as an agent writes it, working against the prototype (scratchpad agent-page.html)
-    const AGENT_PAGE = "<!doctype html>\n<meta charset=\"utf-8\" />\n<title>Stream viewer<\/title>\n<!-- Needs the esm.iterate.com prototype on localhost:8797 (node prototype/serve.ts). -->\n<link rel=\"stylesheet\" href=\"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./styles.css\" />\n<div id=\"root\" class=\"flex h-screen flex-col\"><\/div>\n<script type=\"module\">\n  import { html, render, useState } from \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./page\";\n  import { ContextView } from \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./components/context-view/context-view\";\n\n  const at = (s) => new Date(Date.UTC(2026, 9, 2, 13, 0, s)).toISOString();\n  const context = {\n    events: [\n      { offset: 1, type: \"events.iterate.com/itx/created\", createdAt: at(0), payload: { path: \"/agents/demo\" }, source: { platform: true } },\n      { offset: 2, type: \"chat/message-sent\", createdAt: at(4), payload: { text: \"What's on the calendar tomorrow?\" }, source: { principal: { actor: \"user:misha\" } } },\n      { offset: 3, type: \"chat/message-sent\", createdAt: at(8), payload: { text: \"One thing: a huddle with Jonas at 11.\" }, source: { processor: { slug: \"agent\", version: \"1\" } } },\n    ],\n    caughtUp: true,\n    processors: { rows: [] },\n    presence: { actors: [], rpcStubs: [] },\n    liveState: {},\n  };\n\n  function App() {\n    const [state, setState] = useState({});\n    return html`<${ContextView} title=\"/agents/demo\" context=${context} state=${state}\n      onStateChange=${(patch) => setState((s) => ({ ...s, ...patch }))} className=\"min-h-0 flex-1\" />`;\n  }\n  render(html`<${App} />`, document.getElementById(\"root\"));\n<\/script>\n";
-    $("#page-source").innerHTML = escape(AGENT_PAGE).replace(
-      /http:\/\/localhost:8797\/.*?(?=&quot;)/g,
-      (url) => `<span class="hl">${url}</span>`,
-    );
-    $("#copy-page").addEventListener("click", async (event) => {
-      try {
-        await navigator.clipboard.writeText(AGENT_PAGE);
-        event.target.textContent = "Copied";
-      } catch {
-        const range = document.createRange();
-        range.selectNodeContents($("#page-source"));
-        getSelection().removeAllRanges();
-        getSelection().addRange(range);
-        event.target.textContent = "Selected: press ⌘C";
-      }
-    });
+    // the page in each shape, as an agent writes it, working against the prototype
+    // (scratchpad agent-page.html and importmap-demo.html)
+    const PAGES = { plain: "<!doctype html>\n<meta charset=\"utf-8\" />\n<title>Stream viewer<\/title>\n<!-- Needs the esm.iterate.com prototype on localhost:8797 (node prototype/serve.ts). -->\n<link rel=\"stylesheet\" href=\"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./styles.css\" />\n<div id=\"root\" class=\"flex h-screen flex-col\"><\/div>\n<script type=\"module\">\n  import { html, render, useState } from \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./page\";\n  import { ContextView } from \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./components/context-view/context-view\";\n\n  const at = (s) => new Date(Date.UTC(2026, 9, 2, 13, 0, s)).toISOString();\n  const context = {\n    events: [\n      { offset: 1, type: \"events.iterate.com/itx/created\", createdAt: at(0), payload: { path: \"/agents/demo\" }, source: { platform: true } },\n      { offset: 2, type: \"chat/message-sent\", createdAt: at(4), payload: { text: \"What's on the calendar tomorrow?\" }, source: { principal: { actor: \"user:misha\" } } },\n      { offset: 3, type: \"chat/message-sent\", createdAt: at(8), payload: { text: \"One thing: a huddle with Jonas at 11.\" }, source: { processor: { slug: \"agent\", version: \"1\" } } },\n    ],\n    caughtUp: true,\n    processors: { rows: [] },\n    presence: { actors: [], rpcStubs: [] },\n    liveState: {},\n  };\n\n  function App() {\n    const [state, setState] = useState({});\n    return html`<${ContextView} title=\"/agents/demo\" context=${context} state=${state}\n      onStateChange=${(patch) => setState((s) => ({ ...s, ...patch }))} className=\"min-h-0 flex-1\" />`;\n  }\n  render(html`<${App} />`, document.getElementById(\"root\"));\n<\/script>\n", importmap: "<!doctype html>\n<meta charset=\"utf-8\" />\n<title>Stream viewer, with an import map<\/title>\n<!-- The import map names where each bare import comes from. React, react-dom/client and\n     react/jsx-runtime are ui's own (the copy its components use), so anything else that imports\n     `react` gets the same one: here, a library from esm.sh built with `?external=react`. -->\n<script type=\"importmap\">\n  {\n    \"imports\": {\n      \"react\": \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./react\",\n      \"react/jsx-runtime\": \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./react/jsx-runtime\",\n      \"react-dom/client\": \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./react-dom/client\",\n      \"@iterate-com/ui/components/context-view/context-view\": \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./components/context-view/context-view\",\n      \"htm\": \"https://esm.sh/htm@3.1.1\",\n      \"@tanstack/react-query\": \"https://esm.sh/@tanstack/react-query@5?external=react\"\n    }\n  }\n<\/script>\n<link rel=\"stylesheet\" href=\"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./styles.css\" />\n<div id=\"root\" class=\"flex h-screen flex-col\"><\/div>\n<script type=\"module\">\n  import { createElement, useState } from \"react\";\n  import { createRoot } from \"react-dom/client\";\n  import htm from \"htm\";\n  import { QueryClient, QueryClientProvider, useQuery } from \"@tanstack/react-query\";\n  import { ContextView } from \"@iterate-com/ui/components/context-view/context-view\";\n\n  const html = htm.bind(createElement);\n  const at = (s) => new Date(Date.UTC(2026, 9, 2, 13, 0, s)).toISOString();\n  const sample = [\n    { offset: 1, type: \"events.iterate.com/itx/created\", createdAt: at(0), payload: { path: \"/agents/demo\" }, source: { platform: true } },\n    { offset: 2, type: \"chat/message-sent\", createdAt: at(4), payload: { text: \"What's on the calendar tomorrow?\" }, source: { principal: { actor: \"user:misha\" } } },\n    { offset: 3, type: \"chat/message-sent\", createdAt: at(8), payload: { text: \"One thing: a huddle with Jonas at 11.\" }, source: { processor: { slug: \"agent\", version: \"1\" } } },\n  ];\n\n  function App() {\n    const [state, setState] = useState({});\n    // a hook from a library esm.sh built: with a second React it would throw on its first render\n    const events = useQuery({ queryKey: [\"events\"], queryFn: () => new Promise((resolve) => setTimeout(() => resolve(sample), 300)) });\n    const context = { events: events.data || [], caughtUp: events.isSuccess, processors: { rows: [] }, presence: { actors: [], rpcStubs: [] }, liveState: {} };\n    return html`<${ContextView} title=${`/agents/demo \u00b7 react-query ${events.status}`} context=${context} state=${state}\n      onStateChange=${(patch) => setState((s) => ({ ...s, ...patch }))} className=\"min-h-0 flex-1\" />`;\n  }\n  createRoot(document.getElementById(\"root\")).render(html`<${QueryClientProvider} client=${new QueryClient()}><${App} /><\//>`);\n<\/script>\n" };
+    for (const [shape, file] of Object.entries(PAGES))
+      $(`#source-${shape}`).innerHTML = escape(file).replace(
+        /(?:http:\/\/localhost:8797|https:\/\/esm\.sh)\/.*?(?=&quot;)/g,
+        (url) => `<span class="hl">${url}</span>`,
+      );
+    for (const button of document.querySelectorAll("[data-copy]"))
+      button.addEventListener("click", async () => {
+        const shape = button.dataset.copy;
+        try {
+          await navigator.clipboard.writeText(PAGES[shape]);
+          button.textContent = "Copied";
+        } catch {
+          const range = document.createRange();
+          range.selectNodeContents($(`#source-${shape}`));
+          getSelection().removeAllRanges();
+          getSelection().addRange(range);
+          button.textContent = "Selected: press ⌘C";
+        }
+      });
 
     $("#live-source").innerHTML = [
       `<span class="cm">// the project's config worker: only a signed-in member gets the page</span>`,
