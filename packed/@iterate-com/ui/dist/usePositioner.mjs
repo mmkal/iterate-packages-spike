@@ -1,4 +1,4 @@
-import { a as __toESM, n as __commonJSMin, t as require_react } from "./react2.mjs";
+import { i as __toESM, n as __commonJSMin, t as require_react } from "./react2.mjs";
 import { t as require_react_dom } from "./react-dom.mjs";
 import { t as require_jsx_runtime } from "./jsx-runtime.mjs";
 //#region ../../node_modules/.pnpm/lucide-react@1.48.0_react@19.3.0/node_modules/lucide-react/dist/esm/shared/src/utils/toKebabCase.mjs

@@ -1,4 +1,4 @@
-import { a as __toESM, t as require_react } from "./react2.mjs";
+import { i as __toESM, t as require_react } from "./react2.mjs";
 import { n as cn, t as require_jsx_runtime } from "./jsx-runtime.mjs";
 import { H as EditorView, et as keymap, ht as Prec, n as acceptCompletion, nt as placeholder, r as autocompletion } from "./dist.mjs";
 import { i as basicSetup, n as yaml, r as json, t as vsCodeLight } from "./dist4.mjs";

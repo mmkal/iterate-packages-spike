@@ -1,5 +1,6 @@
-import { a as __toESM, n as __commonJSMin, t as require_react } from "./react2.mjs";
+import { n as __commonJSMin, t as require_react } from "./react2.mjs";
 import { t as require_react_dom } from "./react-dom.mjs";
+import { Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, cloneElement, createContext, createElement, createRef, forwardRef, isValidElement, lazy, memo, startTransition, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version } from "./react.mjs";
 //#region ../../node_modules/.pnpm/scheduler@0.28.0/node_modules/scheduler/cjs/scheduler.production.js
 /**
 * @license React
@@ -10835,8 +10836,8 @@ var require_react_dom_client_production = /* @__PURE__ */ __commonJSMin(((export
 	};
 }));
 //#endregion
-//#region ../../node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/client.js
-var require_client = /* @__PURE__ */ __commonJSMin(((exports, module) => {
+//#region ../../node_modules/.pnpm/htm@3.1.1/node_modules/htm/dist/htm.module.js
+var import_client = (/* @__PURE__ */ __commonJSMin(((exports, module) => {
 	function checkDCE() {
 		if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ === "undefined" || typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.checkDCE !== "function") return;
 		try {
@@ -10847,11 +10848,7 @@ var require_client = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	}
 	checkDCE();
 	module.exports = require_react_dom_client_production();
-}));
-//#endregion
-//#region ../../node_modules/.pnpm/htm@3.1.1/node_modules/htm/dist/htm.module.js
-var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
-var import_client = require_client();
+})))();
 var n = function(t, s, r, e) {
 	var u;
 	s[0] = 0;
@@ -10876,9 +10873,9 @@ function htm_module_default(s) {
 }
 //#endregion
 //#region src/page.ts
-const html = htm_module_default.bind(import_react.createElement);
+const html = htm_module_default.bind(createElement);
 function render(node, element) {
 	(0, import_client.createRoot)(element).render(node);
 }
 //#endregion
-export { html, render };
+export { Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, cloneElement, createContext, createElement, createRef, forwardRef, html, isValidElement, lazy, memo, render, startTransition, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version };
