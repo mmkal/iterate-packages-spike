@@ -1,0 +1,64 @@
+{
+  "name": "@iterate-com/docs",
+  "version": "0.1.0",
+  "description": "Live co-editing for a project's docs: one processor per open doc holds its text as Yjs, autosaves it to its repo, and keeps its comments",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iterate/packages",
+    "directory": "packages/docs"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./install": {
+      "types": "./dist/install.d.mts",
+      "import": "./dist/install.mjs"
+    },
+    "./frames": {
+      "types": "./dist/frames.d.mts",
+      "import": "./dist/frames.mjs"
+    },
+    "./comments": {
+      "types": "./dist/comments.d.mts",
+      "import": "./dist/comments.mjs"
+    },
+    "./anchor": {
+      "types": "./dist/anchor.d.mts",
+      "import": "./dist/anchor.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "AGENTS.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "diff": "^8.0.4",
+    "yjs": "^13.6.31"
+  },
+  "peerDependencies": {
+    "iterate": "*",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260929.1",
+    "node-diff3": "3.2.1",
+    "tsdown": "0.23.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11",
+    "zod": "4.6.5",
+    "iterate": "0.4.1"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "gitHead": "3202ce3878732c3790c9a475751d7fa42777955e"
+}

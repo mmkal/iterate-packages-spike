@@ -1,0 +1,55 @@
+{
+  "name": "@iterate-com/voice",
+  "version": "0.1.0",
+  "description": "Voice for Iterate projects: a GPT-Live conversation per press, answered by the project's agents",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iterate/packages",
+    "directory": "packages/voice"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./install": {
+      "types": "./dist/install.d.mts",
+      "import": "./dist/install.mjs"
+    },
+    "./call": {
+      "types": "./dist/call.d.mts",
+      "import": "./dist/call.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "pako": "^3.0.2"
+  },
+  "peerDependencies": {
+    "iterate": "*",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260929.1",
+    "@types/node": "^24.13.6",
+    "esbuild": "^0.28.2",
+    "tsdown": "0.23.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11",
+    "zod": "4.6.5",
+    "iterate": "0.4.1"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "gitHead": "3202ce3878732c3790c9a475751d7fa42777955e"
+}

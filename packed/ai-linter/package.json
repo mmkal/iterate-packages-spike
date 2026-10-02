@@ -1,0 +1,52 @@
+{
+  "name": "@iterate-com/ai-linter",
+  "version": "0.1.0",
+  "description": "Lints a GitHub repository's pull requests against the repository's own rules folder, with an LLM and TypeSafe's Jev, as a check and review threads",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iterate/packages",
+    "directory": "packages/ai-linter"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./install": {
+      "types": "./dist/install.d.mts",
+      "import": "./dist/install.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@babel/parser": "7.29.9",
+    "yaml": "^2.9.1"
+  },
+  "peerDependencies": {
+    "iterate": "*",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@babel/types": "7.29.8",
+    "@cloudflare/workers-types": "^5.20260929.1",
+    "@types/node": "^24.13.6",
+    "tsdown": "0.23.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11",
+    "zod": "4.6.5",
+    "iterate": "0.4.1"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "gitHead": "3202ce3878732c3790c9a475751d7fa42777955e"
+}
