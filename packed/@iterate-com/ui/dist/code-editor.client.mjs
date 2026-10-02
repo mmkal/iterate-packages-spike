@@ -1,14 +1,10 @@
-import { useEffect, useEffectEvent, useRef } from "react";
-import { cn } from "cn";
-import { jsx } from "react/jsx-runtime";
-import { basicSetup } from "codemirror";
-import { json } from "@codemirror/lang-json";
-import { yaml } from "@codemirror/lang-yaml";
-import { EditorView as EditorView$1, keymap, placeholder } from "@codemirror/view";
-import { vsCodeLight } from "@fsegurai/codemirror-theme-bundle";
-import { acceptCompletion, autocompletion } from "@codemirror/autocomplete";
-import { Prec } from "@codemirror/state";
+import { a as __toESM, t as require_react } from "./react2.mjs";
+import { n as cn, t as require_jsx_runtime } from "./jsx-runtime.mjs";
+import { H as EditorView, et as keymap, ht as Prec, n as acceptCompletion, nt as placeholder, r as autocompletion } from "./dist.mjs";
+import { i as basicSetup, n as yaml, r as json, t as vsCodeLight } from "./dist4.mjs";
 //#region src/components/code-editor.client.tsx
+var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
+var import_jsx_runtime = require_jsx_runtime();
 /**
 * The editable sibling of `CodeBlock`: a controlled CodeMirror
 * surface used as a composer input. The editor instance is created once and
@@ -20,15 +16,15 @@ import { Prec } from "@codemirror/state";
 * the page's colour.
 */
 function CodeEditor({ value, onValueChange, onSubmit, language = "yaml", placeholder: placeholder$1, label, className, focusOnMount = false, complete }) {
-	const containerRef = useRef(null);
-	const viewRef = useRef(null);
-	const emitValueChange = useEffectEvent(onValueChange);
-	const emitSubmit = useEffectEvent(() => onSubmit?.());
-	const completeAt = useEffectEvent((text, pos, explicit) => complete ? complete(text, pos, explicit) : null);
+	const containerRef = (0, import_react.useRef)(null);
+	const viewRef = (0, import_react.useRef)(null);
+	const emitValueChange = (0, import_react.useEffectEvent)(onValueChange);
+	const emitSubmit = (0, import_react.useEffectEvent)(() => onSubmit?.());
+	const completeAt = (0, import_react.useEffectEvent)((text, pos, explicit) => complete ? complete(text, pos, explicit) : null);
 	const completes = Boolean(complete);
-	useEffect(() => {
+	(0, import_react.useEffect)(() => {
 		if (!containerRef.current) return;
-		const view = new EditorView$1({
+		const view = new EditorView({
 			doc: value,
 			parent: containerRef.current,
 			extensions: [
@@ -42,9 +38,9 @@ function CodeEditor({ value, onValueChange, onSubmit, language = "yaml", placeho
 				basicSetup,
 				vsCodeLight,
 				(language === "json" ? json : yaml)(),
-				EditorView$1.lineWrapping,
+				EditorView.lineWrapping,
 				placeholder$1 ? placeholder(placeholder$1) : [],
-				label ? EditorView$1.contentAttributes.of({ "aria-label": label }) : [],
+				label ? EditorView.contentAttributes.of({ "aria-label": label }) : [],
 				completes ? [autocompletion({
 					activateOnTyping: true,
 					interactionDelay: 0,
@@ -55,10 +51,10 @@ function CodeEditor({ value, onValueChange, onSubmit, language = "yaml", placeho
 					key: "Tab",
 					run: acceptCompletion
 				}]))] : [],
-				EditorView$1.updateListener.of((update) => {
+				EditorView.updateListener.of((update) => {
 					if (update.docChanged) emitValueChange(update.state.doc.toString());
 				}),
-				Prec.highest(EditorView$1.theme({
+				Prec.highest(EditorView.theme({
 					"&": {
 						backgroundColor: "transparent",
 						fontSize: "inherit",
@@ -132,7 +128,7 @@ function CodeEditor({ value, onValueChange, onSubmit, language = "yaml", placeho
 		focusOnMount,
 		completes
 	]);
-	useEffect(() => {
+	(0, import_react.useEffect)(() => {
 		const view = viewRef.current;
 		if (!view) return;
 		const current = view.state.doc.toString();
@@ -146,7 +142,7 @@ function CodeEditor({ value, onValueChange, onSubmit, language = "yaml", placeho
 			selection: { anchor: value.length }
 		});
 	}, [value]);
-	return /* @__PURE__ */ jsx("div", {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 		ref: containerRef,
 		className: cn("text-base sm:text-xs", className)
 	});
