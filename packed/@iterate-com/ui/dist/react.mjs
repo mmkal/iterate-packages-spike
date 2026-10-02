@@ -1,4 +1,5 @@
-import { i as __toESM, t as require_react } from "./react2.mjs";
+import { r as __toESM } from "./rolldown-runtime.mjs";
+import { i as require_react } from "./vendor-react.mjs";
 //#region src/react.ts
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
 var react_default = import_react.default;

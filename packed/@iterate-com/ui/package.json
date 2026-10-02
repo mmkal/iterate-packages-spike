@@ -6,6 +6,7 @@
   "exports": {
     "./page": "./dist/page.mjs",
     "./react": "./dist/react.mjs",
+    "./live": "./dist/live.mjs",
     "./components/context-view/context-view": "./dist/components/context-view/context-view.mjs",
     "./styles.css": "./dist/styles.css"
   }

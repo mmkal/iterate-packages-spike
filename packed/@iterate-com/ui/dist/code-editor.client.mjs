@@ -1,7 +1,8 @@
-import { i as __toESM, t as require_react } from "./react2.mjs";
-import { n as cn, t as require_jsx_runtime } from "./jsx-runtime.mjs";
-import { H as EditorView, et as keymap, ht as Prec, n as acceptCompletion, nt as placeholder, r as autocompletion } from "./dist.mjs";
-import { i as basicSetup, n as yaml, r as json, t as vsCodeLight } from "./dist4.mjs";
+import { r as __toESM } from "./rolldown-runtime.mjs";
+import { i as require_react, t as require_jsx_runtime } from "./vendor-react.mjs";
+import { t as cn } from "./dist.mjs";
+import { L as Prec, M as keymap, P as placeholder, T as EditorView, f as acceptCompletion, n as json, p as autocompletion, t as yaml } from "./vendor-codemirror.mjs";
+import { n as basicSetup, t as vsCodeLight } from "./dist2.mjs";
 //#region src/components/code-editor.client.tsx
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
 var import_jsx_runtime = require_jsx_runtime();
