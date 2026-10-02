@@ -1,8 +1,13 @@
 // PROTOTYPE of esm.iterate.com: serves packages built into a public GitHub repo's `packed/<name>/`
 // folder (what `pnpm pack` makes, minus scripts and devDependencies), for three consumers:
 //
-//   GET /<owner>/<repo>/<name>@<ref>[/<subpath>]?external=a,b   an ES module (browsers, the loader)
-//   GET /tgz/<owner>/<repo>/<name>@<ref>                         an npm tarball (npm/pnpm/bun, for tsc)
+//   GET /<owner>/<repo>/<name>@<ref>                  to npm, pnpm, yarn or bun: the npm tarball, as
+//                                                     pkg.pr.new serves the same path
+//   GET /<owner>/<repo>/<name>@<ref>[/<subpath>]?…    to anything else: an ES module (browsers, the
+//                                                     loader), as esm.sh serves a /pr/ path
+//
+// so one URL, written once in a config's package.json, is what `npm install` fetches and what the
+// loader (and a page) imports.
 //
 // A module's imports are rewritten as esm.sh rewrites them: relative ones and the package's own
 // subpaths to this service at the same commit, a package from the same repo at the same commit, an
@@ -13,26 +18,32 @@ import { init, parse } from "es-module-lexer";
 
 const ESM_SH = "https://esm.sh";
 const PACKED = "packed";
+/** Whose repos it serves (Misha, 2026-10-02: `iterate/<anything>`, maybe loosened one day). */
+const OWNERS = new Set(["iterate", "mmkal" /* SPIKE: the throwaway repo */]);
 
 export default {
   fetch: (request: Request) => handle(request, globalThis.fetch),
 };
 
-const route =
-  /^\/(tgz\/)?([\w.-]+)\/([\w.-]+)\/((?:@[\w.-]+\/)?[\w.-]+)@([\w.-]+)(?:\/([^?]*))?$/;
+const route = /^\/([\w.-]+)\/([\w.-]+)\/((?:@[\w.-]+\/)?[\w.-]+)@([\w.-]+)(?:\/([^?]*))?$/;
+/** Package managers, by the User-Agent each sends with a tarball request. */
+const packageManager = /^(npm|pnpm|yarn|bun)\//i;
 
 export async function handle(request: Request, fetchFn: typeof fetch): Promise<Response> {
   await init;
   const url = new URL(request.url);
   const match = url.pathname.match(route);
   if (!match) return text(404, "not found: /<owner>/<repo>/<name>@<ref>[/<subpath>]");
-  const [, tgz, owner, repo, name, ref, subpath = ""] = match as unknown as string[];
+  const [, owner, repo, name, ref, subpath = ""] = match as unknown as string[];
+  const tgz = !subpath && packageManager.test(request.headers.get("user-agent") || "");
+  if (!OWNERS.has(owner!)) return text(403, `serves iterate's repos only, not ${owner}/${repo}`);
   const gh = new GitHub(owner!, repo!, fetchFn);
   const sha = /^[0-9a-f]{40}$/.test(ref!) ? ref! : await gh.resolveRef(ref!);
   if (!sha) return text(404, `${owner}/${repo} has no branch or tag ${ref}`);
   const headers = {
     "access-control-allow-origin": "*",
     "x-commit-key": `${owner}:${repo}:${sha}`,
+    vary: "user-agent",
   };
   if (tgz) {
     const tarball = await gh.packTarball(sha, `${PACKED}/${name}`);
@@ -52,11 +63,11 @@ export async function handle(request: Request, fetchFn: typeof fetch): Promise<R
   }
   const pkg = new Package(gh, sha, name!, url.searchParams);
   try {
-    const code = await pkg.module(subpath);
-    return new Response(code, {
+    const served = await pkg.serve(subpath);
+    return new Response(served.body, {
       headers: {
         ...headers,
-        "content-type": "application/javascript; charset=utf-8",
+        "content-type": served.type,
         "cache-control": "public, max-age=31536000, immutable",
       },
     });
@@ -116,10 +127,18 @@ class Package {
     return file?.replace(/^\.\//, "");
   }
 
-  /** `subpath` as a module: an export is a stub re-exporting its file's URL (one module per file,
-   *  whichever entry reaches it), and a file is its code with every import rewritten. */
-  async module(subpath: string): Promise<string> {
+  /** `subpath` as served: an export of a module is a stub re-exporting its file's URL (one module
+   *  per file, whichever entry reaches it), a module file is its code with every import rewritten,
+   *  and anything else (a stylesheet) is the file as built. */
+  async serve(subpath: string): Promise<{ body: string; type: string }> {
     const entry = await this.exportFile(subpath);
+    const file = entry || subpath;
+    if (/\.css$/.test(file)) return { body: await this.file(file), type: "text/css; charset=utf-8" };
+    const js = "application/javascript; charset=utf-8";
+    return { body: await this.module(subpath, entry), type: js };
+  }
+
+  private async module(subpath: string, entry: string | undefined): Promise<string> {
     if (entry !== undefined || subpath === "") {
       if (!entry) throw new NotFound(`${this.name} has no "." export`);
       const target = JSON.stringify(`${this.base()}/${entry}${this.suffix()}`);
@@ -170,6 +189,14 @@ class Package {
     if (await this.gh.file(this.sha, `${PACKED}/${dependency}/package.json`))
       return `${this.base(dependency)}${sub}${this.suffix()}`;
     const esm = new URLSearchParams({ target: this.query.get("target") || "es2022" });
+    // the package's other dependencies at the exact versions it was built with, so esm.sh builds
+    // every package in the graph against the same React, the same @codemirror/state, …
+    // (one `deps` for every URL: esm.sh writes it into each build's path, so a package reached
+    // through two different lists would be two modules — two Reacts)
+    const pinned = Object.entries(manifest.dependencies || {}).filter(([, v]) =>
+      /^\d+\.\d+\.\d+(-[\w.]+)?$/.test(v),
+    );
+    if (pinned.length) esm.set("deps", pinned.map(([name, v]) => `${name}@${v}`).join(","));
     if (this.externals().size) esm.set("external", [...this.externals()].join(","));
     return `${ESM_SH}/${dependency}@${version}${sub}?${esm}`;
   }

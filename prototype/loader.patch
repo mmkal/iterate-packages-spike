@@ -1,5 +1,5 @@
 diff --git a/core/os/src/context/module-resolution.ts b/core/os/src/context/module-resolution.ts
-index c70e7b6751..065689d883 100644
+index c70e7b6751..3514d7e916 100644
 --- a/core/os/src/context/module-resolution.ts
 +++ b/core/os/src/context/module-resolution.ts
 @@ -69,6 +69,9 @@ export type ResolveOptions = {
@@ -22,19 +22,21 @@ index c70e7b6751..065689d883 100644
  }
  
  /** esm.sh's URL for the package dependency `name` is listed as, at its version. The source imports
-@@ -402,6 +406,11 @@ function esmPackageBase(name: string, version: string, where: string): string {
+@@ -402,6 +406,13 @@ function esmPackageBase(name: string, version: string, where: string): string {
        );
      return `${ESM_ORIGIN}/${alias[1]}@${alias[2] || "latest"}`;
    }
-+  // SPIKE: a build in a GitHub repo's packed/<name>/, as the service's tarball URL names it
-+  const packed = version.startsWith(`${PACKAGES_ORIGIN}/tgz/`)
-+    ? version.slice(PACKAGES_ORIGIN.length + 4).match(/^\/([\w.-]+)\/([\w.-]+)\/((?:@[\w.-]+\/)?[\w.-]+)@([0-9a-f]{40})$/)
-+    : undefined;
-+  if (packed) return `${PACKAGES_ORIGIN}/${packed[1]}/${packed[2]}/${packed[3]}@${packed[4]}`;
++  // SPIKE: a build in an iterate repo's packed/<name>/: the URL package.json lists is the one npm
++  // installs and the one the loader imports (esm.iterate.com answers each by who asks)
++  if (version.startsWith(`${PACKAGES_ORIGIN}/`)) {
++    if (!/^\/[\w.-]+\/[\w.-]+\/(?:@[\w.-]+\/)?[\w.-]+@[0-9a-f]{40}$/.test(version.slice(PACKAGES_ORIGIN.length)))
++      throw new Error(`${where}: package.json lists ${name} as ${version}; pin it at a commit: ${PACKAGES_ORIGIN}/<owner>/<repo>/${name}@<40-hex sha>`);
++    return version;
++  }
    if (!version.startsWith("https://pkg.pr.new/")) return `${ESM_ORIGIN}/${name}@${version}`;
    const build = pkgPrNewBuildOf(version);
    if (!build)
-@@ -511,9 +520,9 @@ async function resolveFromEsm(
+@@ -511,9 +522,9 @@ async function resolveFromEsm(
            throw new Error(
              `${url.pathname} needs the Node.js builtin ${specifier}, which loaded workers do not have`,
            );

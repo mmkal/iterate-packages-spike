@@ -15,8 +15,8 @@ test("packages in a GitHub repo's packed/ load through the esm.iterate.com proto
       "package.json": JSON.stringify({
         main: "worker.ts",
         dependencies: {
-          "@iterate-com/voice": "http://localhost:8797/tgz/mmkal/iterate-packages-spike/@iterate-com/voice@9d08465d4f273f4be264302901dae3a7718724e3",
-          "@iterate-com/docs": "http://localhost:8797/tgz/mmkal/iterate-packages-spike/@iterate-com/docs@9d08465d4f273f4be264302901dae3a7718724e3",
+          "@iterate-com/voice": "http://localhost:8797/mmkal/iterate-packages-spike/@iterate-com/voice@9d08465d4f273f4be264302901dae3a7718724e3",
+          "@iterate-com/docs": "http://localhost:8797/mmkal/iterate-packages-spike/@iterate-com/docs@9d08465d4f273f4be264302901dae3a7718724e3",
         },
       }),
       "worker.ts": `import * as voice from "@iterate-com/voice"; import { installVoice } from "@iterate-com/voice/install"; import { findQuote } from "@iterate-com/docs/anchor"; import * as docs from "@iterate-com/docs";

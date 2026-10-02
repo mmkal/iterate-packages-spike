@@ -1,0 +1,44 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stream viewer, no build</title>
+<!-- One stylesheet and two imports: no bundler, no import map. -->
+<link rel="stylesheet" href="/mmkal/iterate-packages-spike/@iterate-com/ui@ea8c728cfc8e1331cfb69cf66e779fd4984907fe/styles.css" />
+<body class="m-0">
+  <div id="root" class="flex h-screen flex-col"></div>
+  <script type="module">
+    import { html, render, useState } from "/mmkal/iterate-packages-spike/@iterate-com/ui@ea8c728cfc8e1331cfb69cf66e779fd4984907fe/page";
+    import { ContextView } from "/mmkal/iterate-packages-spike/@iterate-com/ui@ea8c728cfc8e1331cfb69cf66e779fd4984907fe/components/context-view/context-view";
+
+    const at = (s) => new Date(Date.UTC(2026, 9, 2, 13, 0, s)).toISOString();
+    const me = { principal: { actor: "user:misha", email: "misha@iterate.com" } };
+    const events = [
+      { offset: 1, type: "events.iterate.com/itx/created", createdAt: at(0), payload: { path: "/agents/demo" }, source: { platform: true } },
+      { offset: 2, type: "events.iterate.com/itx/subscription-configured", createdAt: at(1), payload: { name: "agent", target: "facet:agent" }, source: { platform: true } },
+      { offset: 3, type: "chat/message-sent", createdAt: at(4), payload: { text: "What's on the calendar tomorrow?" }, source: me },
+      { offset: 4, type: "events.iterate.com/itx/run-requested", createdAt: at(5), payload: { script: "async (itx) => itx.calendar.list({ day: 'tomorrow' })" }, source: me },
+      { offset: 5, type: "events.iterate.com/itx/run-settled", createdAt: at(6), payload: { result: [{ title: "Huddle with Jonas", at: "11:00" }] }, source: { platform: true } },
+      { offset: 6, type: "chat/message-sent", createdAt: at(8), payload: { text: "One thing: a huddle with Jonas at 11." }, source: { processor: { slug: "agent", version: "1" } } },
+    ];
+    const context = {
+      events,
+      caughtUp: true,
+      head: 6,
+      processors: { rows: [{ name: "agent", target: "facet:agent", configuredAtOffset: 2, hostedFacet: { name: "agent", className: "Agent", restarts: 0 } }] },
+      presence: { actors: [{ actor: "user:misha", email: "misha@iterate.com", lastSeenAt: at(9) }], rpcStubs: [] },
+      liveState: { core: { status: "ready", value: { events: 6 }, rev: 6 } },
+    };
+
+    function App() {
+      const [state, setState] = useState({});
+      return html`<${ContextView}
+        title="/agents/demo"
+        context=${context}
+        state=${state}
+        onStateChange=${(patch) => setState((previous) => ({ ...previous, ...patch }))}
+        className="min-h-0 flex-1"
+      />`;
+    }
+    render(html`<${App} />`, document.getElementById("root"));
+  </script>
+</body>
