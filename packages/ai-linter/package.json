@@ -10,34 +10,24 @@
   },
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./install": "./src/install.ts"
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./install": {
+      "types": "./dist/install.d.mts",
+      "import": "./dist/install.mjs"
+    }
   },
   "files": [
     "dist"
   ],
   "publishConfig": {
-    "access": "public",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.mts",
-        "import": "./dist/index.mjs"
-      },
-      "./install": {
-        "types": "./dist/install.d.mts",
-        "import": "./dist/install.mjs"
-      }
-    }
-  },
-  "scripts": {
-    "build": "tsdown",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "prepack": "pnpm build"
+    "access": "public"
   },
   "dependencies": {
     "@babel/parser": "7.29.9",
-    "yaml": "catalog:"
+    "yaml": "^2.9.1"
   },
   "peerDependencies": {
     "iterate": "*",
@@ -45,12 +35,18 @@
   },
   "devDependencies": {
     "@babel/types": "7.29.8",
-    "@cloudflare/workers-types": "catalog:",
-    "@types/node": "catalog:",
-    "iterate": "workspace:*",
-    "tsdown": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
-    "zod": "catalog:"
-  }
+    "@cloudflare/workers-types": "^5.20260929.1",
+    "@types/node": "^24.13.6",
+    "tsdown": "0.23.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11",
+    "zod": "4.6.5",
+    "iterate": "0.4.1"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "gitHead": "3202ce3878732c3790c9a475751d7fa42777955e"
 }

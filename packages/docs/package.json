@@ -10,46 +10,33 @@
   },
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./install": "./src/install.ts",
-    "./frames": "./src/frames.ts",
-    "./comments": "./src/comments.ts",
-    "./anchor": "./src/anchor.ts"
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./install": {
+      "types": "./dist/install.d.mts",
+      "import": "./dist/install.mjs"
+    },
+    "./frames": {
+      "types": "./dist/frames.d.mts",
+      "import": "./dist/frames.mjs"
+    },
+    "./comments": {
+      "types": "./dist/comments.d.mts",
+      "import": "./dist/comments.mjs"
+    },
+    "./anchor": {
+      "types": "./dist/anchor.d.mts",
+      "import": "./dist/anchor.mjs"
+    }
   },
   "files": [
     "dist",
     "AGENTS.md"
   ],
   "publishConfig": {
-    "access": "public",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.mts",
-        "import": "./dist/index.mjs"
-      },
-      "./install": {
-        "types": "./dist/install.d.mts",
-        "import": "./dist/install.mjs"
-      },
-      "./frames": {
-        "types": "./dist/frames.d.mts",
-        "import": "./dist/frames.mjs"
-      },
-      "./comments": {
-        "types": "./dist/comments.d.mts",
-        "import": "./dist/comments.mjs"
-      },
-      "./anchor": {
-        "types": "./dist/anchor.d.mts",
-        "import": "./dist/anchor.mjs"
-      }
-    }
-  },
-  "scripts": {
-    "build": "tsdown",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "prepack": "pnpm build"
+    "access": "public"
   },
   "dependencies": {
     "diff": "^8.0.4",
@@ -60,12 +47,18 @@
     "zod": "^4"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "catalog:",
-    "iterate": "workspace:*",
+    "@cloudflare/workers-types": "^5.20260929.1",
     "node-diff3": "3.2.1",
-    "tsdown": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
-    "zod": "catalog:"
-  }
+    "tsdown": "0.23.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11",
+    "zod": "4.6.5",
+    "iterate": "0.4.1"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "gitHead": "3202ce3878732c3790c9a475751d7fa42777955e"
 }
