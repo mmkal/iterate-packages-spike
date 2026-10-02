@@ -1,5 +1,5 @@
 diff --git a/core/os/src/context/module-resolution.ts b/core/os/src/context/module-resolution.ts
-index c70e7b6751..3514d7e916 100644
+index c70e7b6751..f6a3a0945b 100644
 --- a/core/os/src/context/module-resolution.ts
 +++ b/core/os/src/context/module-resolution.ts
 @@ -69,6 +69,9 @@ export type ResolveOptions = {
@@ -22,21 +22,24 @@ index c70e7b6751..3514d7e916 100644
  }
  
  /** esm.sh's URL for the package dependency `name` is listed as, at its version. The source imports
-@@ -402,6 +406,13 @@ function esmPackageBase(name: string, version: string, where: string): string {
+@@ -402,6 +406,16 @@ function esmPackageBase(name: string, version: string, where: string): string {
        );
      return `${ESM_ORIGIN}/${alias[1]}@${alias[2] || "latest"}`;
    }
 +  // SPIKE: a build in an iterate repo's packed/<name>/: the URL package.json lists is the one npm
 +  // installs and the one the loader imports (esm.iterate.com answers each by who asks)
 +  if (version.startsWith(`${PACKAGES_ORIGIN}/`)) {
-+    if (!/^\/[\w.-]+\/[\w.-]+\/(?:@[\w.-]+\/)?[\w.-]+@[0-9a-f]{40}$/.test(version.slice(PACKAGES_ORIGIN.length)))
-+      throw new Error(`${where}: package.json lists ${name} as ${version}; pin it at a commit: ${PACKAGES_ORIGIN}/<owner>/<repo>/${name}@<40-hex sha>`);
++    const packed = new URL(version);
++    if (!/^[0-9a-f]{40}$/.test(packed.searchParams.get("ref") || "") || packed.searchParams.get("path") !== ".")
++      throw new Error(
++        `${where}: package.json lists ${name} as ${version}; pin it at a commit: ${PACKAGES_ORIGIN}/<name>?repository=<owner>/<repo>&ref=<40-hex sha>&path=.`,
++      );
 +    return version;
 +  }
    if (!version.startsWith("https://pkg.pr.new/")) return `${ESM_ORIGIN}/${name}@${version}`;
    const build = pkgPrNewBuildOf(version);
    if (!build)
-@@ -511,9 +522,9 @@ async function resolveFromEsm(
+@@ -511,9 +525,9 @@ async function resolveFromEsm(
            throw new Error(
              `${url.pathname} needs the Node.js builtin ${specifier}, which loaded workers do not have`,
            );
@@ -48,3 +51,17 @@ index c70e7b6751..3514d7e916 100644
              throw new Error(`${url.pathname} imports ${child.href}, outside esm.sh`);
            const childName = esmModuleName(child);
            load(child.href, childName);
+@@ -544,7 +558,12 @@ async function resolveFromEsm(
+   for (const specifier of lock.specifiers) {
+     const name = packageName(specifier);
+     const base = bases[name]!;
+-    load(`${base}${specifier.slice(name.length)}?${query}`, moduleOfSpecifier(specifier));
++    const subpath = specifier.slice(name.length);
++    // SPIKE: esm.iterate.com names the export in `path` (its URL ends `path=.`) and takes `external`
++    const href = base.startsWith(`${PACKAGES_ORIGIN}/`)
++      ? `${base}${subpath}&external=${lock.externals.join(",")}`
++      : `${base}${subpath}?${query}`;
++    load(href, moduleOfSpecifier(specifier));
+   }
+   while (inFlight.size) await Promise.all(inFlight);
+   if (failures.length) {

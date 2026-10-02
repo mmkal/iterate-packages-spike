@@ -1,0 +1,1115 @@
+<title>esm.iterate.com load trace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+/>
+<style>
+  :root {
+    --bg: #f2f4f7;
+    --surface: #ffffff;
+    --ink: #16202b;
+    --muted: #5a6675;
+    --rule: #d8dee6;
+    --accent: #0a6c96;
+    --accent-soft: #d9ecf4;
+    --service: #9a5b00;
+    --service-soft: #f6e7cf;
+    --ok: #2f7a4d;
+    --bad: #b42318;
+    --bad-soft: #fbe3e0;
+    --code-bg: #eaeef3;
+    --bar-bg: #e3e8ee;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --display: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e131a;
+      --surface: #151c25;
+      --ink: #e4e9ef;
+      --muted: #91a0b0;
+      --rule: #263140;
+      --accent: #4db2df;
+      --accent-soft: #15303f;
+      --service: #e3a54a;
+      --service-soft: #3a2a12;
+      --ok: #5dc08b;
+      --bad: #f2766b;
+      --bad-soft: #3d1c1a;
+      --code-bg: #10171f;
+      --bar-bg: #1e2732;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e131a;
+    --surface: #151c25;
+    --ink: #e4e9ef;
+    --muted: #91a0b0;
+    --rule: #263140;
+    --accent: #4db2df;
+    --accent-soft: #15303f;
+    --service: #e3a54a;
+    --service-soft: #3a2a12;
+    --ok: #5dc08b;
+    --bad: #f2766b;
+    --bad-soft: #3d1c1a;
+    --code-bg: #10171f;
+    --bar-bg: #1e2732;
+    color-scheme: dark;
+  }
+  [hidden] {
+    display: none !important;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.6 var(--sans);
+  }
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+    display: grid;
+    gap: 56px;
+  }
+  h1,
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    text-wrap: balance;
+    letter-spacing: -0.005em;
+    margin: 0;
+  }
+  h1 {
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.15;
+  }
+  h2 {
+    font-size: 24px;
+    line-height: 1.2;
+  }
+  p {
+    margin: 0;
+    max-width: 68ch;
+  }
+  code,
+  pre,
+  .mono {
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  :not(pre) > code {
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  a {
+    color: var(--accent);
+  }
+  .eyebrow {
+    font: 500 12px/1 var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  section,
+  header {
+    display: grid;
+    gap: 16px;
+  }
+  .lede {
+    font-size: 17px;
+  }
+  .mode {
+    font-size: 14px;
+    color: var(--muted);
+    border-left: 3px solid var(--accent);
+    padding-left: 12px;
+  }
+  .takeaway {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-width: 80ch;
+  }
+  .takeaway li {
+    display: grid;
+    grid-template-columns: 9.5rem minmax(0, 1fr);
+    gap: 16px;
+    padding-top: 10px;
+    border-top: 1px solid var(--rule);
+  }
+  .takeaway b {
+    font-weight: 600;
+  }
+  details.glossary {
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    padding: 12px 0;
+  }
+  details.glossary > summary {
+    cursor: pointer;
+    font-weight: 600;
+  }
+  dl {
+    display: grid;
+    grid-template-columns: 13rem minmax(0, 1fr);
+    gap: 10px 20px;
+    margin: 16px 0 4px;
+  }
+  dt {
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  dd {
+    margin: 0;
+    max-width: 70ch;
+  }
+  pre.code {
+    margin: 0;
+    background: var(--code-bg);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    line-height: 1.55;
+  }
+  .code .hl {
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .code .cm {
+    color: var(--muted);
+  }
+
+  /* the load: trace on the left, the running page and what the browser holds on the right */
+  .load {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  button {
+    font: 500 14px var(--sans);
+    color: var(--surface);
+    background: var(--accent);
+    border: 0;
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+  button.secondary {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+  button:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .hint {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .trace {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .axis,
+  .row > summary {
+    display: grid;
+    grid-template-columns: 4.6rem minmax(0, 1fr) minmax(5rem, 34%);
+    gap: 12px;
+    align-items: center;
+    padding: 8px 14px;
+  }
+  .axis {
+    font: 12px var(--mono);
+    color: var(--muted);
+    border-bottom: 1px solid var(--rule);
+    padding-block: 6px;
+  }
+  .ticks {
+    position: relative;
+    height: 16px;
+  }
+  .ticks span {
+    position: absolute;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+  .ticks span:first-child {
+    transform: none;
+  }
+  .row {
+    border-bottom: 1px solid var(--rule);
+  }
+  .row:last-child {
+    border-bottom: 0;
+  }
+  .row > summary {
+    cursor: pointer;
+    list-style: none;
+  }
+  .row > summary::-webkit-details-marker {
+    display: none;
+  }
+  .row[open] > summary {
+    background: var(--code-bg);
+  }
+  .t {
+    font: 12px var(--mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .what {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+  .what .main {
+    font: 500 13px var(--mono);
+    overflow-wrap: anywhere;
+  }
+  .what .why {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .tag {
+    font: 11px/1.6 var(--mono);
+    padding: 0 6px;
+    border-radius: 4px;
+    background: var(--bar-bg);
+    color: var(--muted);
+  }
+  .tag.s302 {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .tag.gh {
+    background: var(--service-soft);
+    color: var(--service);
+  }
+  .tag.lazy {
+    background: var(--ok);
+    color: var(--surface);
+  }
+  .bar {
+    position: relative;
+    height: 12px;
+    background: var(--bar-bg);
+    border-radius: 3px;
+  }
+  .bar i,
+  .bar b,
+  .bar u {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    min-width: 2px;
+    border-radius: 2px;
+  }
+  .bar i {
+    background: var(--accent);
+    opacity: 0.85;
+  }
+  .bar b {
+    background: var(--service);
+  }
+  .bar u {
+    background: var(--ok);
+    width: 2px;
+    top: -3px;
+    bottom: -3px;
+  }
+  .row pre {
+    margin: 0;
+    padding: 10px 14px 14px 5.6rem;
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-x: auto;
+    background: var(--code-bg);
+    white-space: pre;
+  }
+  .later {
+    font: 12px var(--mono);
+    color: var(--ok);
+  }
+  .milestone > summary .main {
+    color: var(--ok);
+  }
+  .empty {
+    padding: 28px 14px;
+    color: var(--muted);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .legend span::before {
+    content: "";
+    display: inline-block;
+    width: 18px;
+    height: 8px;
+    border-radius: 2px;
+    margin-right: 6px;
+    vertical-align: middle;
+    background: var(--swatch);
+  }
+  .side {
+    display: grid;
+    gap: 16px;
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 16px);
+  }
+  .viewer {
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .viewer iframe {
+    display: block;
+    width: 100%;
+    height: 330px;
+    border: 0;
+  }
+  .viewer .caption {
+    font-size: 12px;
+    color: #5a6675;
+    background: #f2f4f7;
+    padding: 6px 12px;
+    border-top: 1px solid #d8dee6;
+  }
+  .state {
+    grid-template-columns: minmax(0, 1fr);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 6px 16px;
+    display: grid;
+    margin: 0;
+  }
+  .state > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .state > div:last-child {
+    border-bottom: 0;
+  }
+  .state dt {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .state dd {
+    font: 500 14px var(--mono);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .state dd.good {
+    color: var(--ok);
+  }
+
+  ol.steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+    counter-reset: step;
+  }
+  ol.steps > li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 2.4rem minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px 0;
+    border-top: 1px solid var(--rule);
+  }
+  ol.steps > li::before {
+    content: counter(step);
+    font: 600 22px/1 var(--display);
+    color: var(--accent);
+  }
+  ol.steps > li > div {
+    display: grid;
+    gap: 6px;
+  }
+  ol.steps .when {
+    font: 500 12px var(--mono);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .failure {
+    border: 1px solid var(--bad);
+    background: var(--bad-soft);
+    border-radius: 10px;
+    padding: 16px;
+    display: grid;
+    gap: 10px;
+  }
+  .failure pre {
+    margin: 0;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .sizes {
+    display: grid;
+    gap: 8px;
+    max-width: 760px;
+  }
+  .size {
+    display: grid;
+    grid-template-columns: 13rem minmax(0, 1fr) 4.5rem;
+    gap: 12px;
+    align-items: center;
+    font-size: 14px;
+  }
+  .size .track {
+    height: 14px;
+    background: var(--bar-bg);
+    border-radius: 3px;
+    position: relative;
+  }
+  .size .fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: var(--accent);
+    border-radius: 3px;
+  }
+  .size .fill.lazy {
+    background: var(--ok);
+  }
+  .size .n {
+    font: 500 13px var(--mono);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .facts > div {
+    border-top: 2px solid var(--rule);
+    padding-top: 10px;
+    display: grid;
+    gap: 4px;
+  }
+  .facts .big {
+    font: 600 26px/1.1 var(--display);
+    font-variant-numeric: tabular-nums;
+  }
+  .planned {
+    border-left: 3px solid var(--service);
+    padding-left: 12px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  @media (max-width: 860px) {
+    .load {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .side {
+      position: static;
+      order: -1;
+    }
+  }
+  @media (max-width: 560px) {
+    .axis {
+      display: none;
+    }
+    .row > summary {
+      grid-template-columns: 3.6rem minmax(0, 1fr);
+    }
+    .row > summary .bar {
+      grid-column: 1 / -1;
+    }
+    .row pre {
+      padding-left: 14px;
+    }
+    .takeaway li,
+    dl {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 4px;
+    }
+    dl {
+      gap: 4px 0;
+    }
+    dd {
+      margin-bottom: 10px;
+    }
+    .size {
+      grid-template-columns: 7.5rem minmax(0, 1fr) 4rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+    }
+  }
+</style>
+
+<main class="wrap">
+  <header>
+    <div class="eyebrow">Prototype · spike 2026-10-02 · iterate/private</div>
+    <h1>How a no-build page loads iterate's stream viewer from esm.iterate.com</h1>
+    <p class="lede">
+      An agent writes one HTML file. It imports <code>ContextView</code>, the stream viewer, from
+      esm.iterate.com, and the browser runs it. Nothing is built while the page loads. Everything was
+      built earlier, once, when packages/ui changed on main.
+    </p>
+    <p class="mode" id="mode"></p>
+    <ul class="takeaway">
+      <li>
+        <b>"ui"</b
+        ><span
+          >packages/ui in iterate/private, published as <code>@iterate-com/ui</code>: iterate's React
+          component kit. ContextView lives in it, beside the repo IDE and shadcn's components.</span
+        >
+      </li>
+      <li>
+        <b>When it bundles</b
+        ><span
+          >In CI, after a change to packages/ui merges. tsdown builds ui and copies the libraries it
+          uses (React, Base UI, CodeMirror, the SDK's browser client) into ui's own output files, in
+          chunks that ui's entry points share. The output is committed to iterate/packages.</span
+        >
+      </li>
+      <li>
+        <b>At load time</b
+        ><span
+          >The browser asks esm.iterate.com for files. The service finds them in iterate/packages at a
+          commit and serves them. Every chunk has one URL, so the page runs one React and one
+          CodeMirror, and nothing comes from esm.sh.</span
+        >
+      </li>
+    </ul>
+    <details class="glossary">
+      <summary>Terms used on this page</summary>
+      <dl>
+        <dt>packages/ui</dt>
+        <dd>
+          The folder in iterate/private holding iterate's React components (<code>.tsx</code> source
+          with Tailwind classes). Its package name is <code>@iterate-com/ui</code>.
+        </dd>
+        <dt>iterate/packages</dt>
+        <dd>
+          The public GitHub copy of iterate/private's <code>packages/</code> and
+          <code>configs/</code>, made by Copybara after every change on main. In this design it also
+          holds <code>packed/&lt;package&gt;/</code>: each package's built files.
+        </dd>
+        <dt>build, bundle</dt>
+        <dd>
+          Turning a package's source into files a browser can run. Bundling copies the code of the
+          libraries it imports into those files, instead of leaving <code>import "react"</code> for
+          someone else to satisfy.
+        </dd>
+        <dt>entry, chunk</dt>
+        <dd>
+          An entry is a file a page imports by name (<code>./page</code>,
+          <code>./components/context-view/context-view</code>). A chunk is a file entries share, such
+          as <code>vendor-react.mjs</code>, so code that two entries need is downloaded and run once.
+        </dd>
+        <dt>esm.iterate.com</dt>
+        <dd>
+          The proposed service (a Cloudflare Worker). It serves files from
+          <code>packed/</code> at a commit, as ES modules to browsers and the platform's loader, and as
+          npm tarballs to package managers. The prototype runs on <code>localhost:8797</code>.
+        </dd>
+        <dt>esm.sh</dt>
+        <dd>
+          A public service that turns npm packages into browser modules on request. Our worker
+          packages' npm dependencies still come from it. Our browser package no longer does (section 4).
+        </dd>
+        <dt>ref, commit</dt>
+        <dd>
+          <code>ref=main</code> names whatever main is now. esm.iterate.com answers it with a
+          redirect to the commit (a 40-character sha), so every file's URL names one build forever and
+          can be cached forever.
+        </dd>
+        <dt>one URL, one module</dt>
+        <dd>
+          A browser runs each module URL once. Two URLs with the same code are two separate copies:
+          two Reacts that don't know about each other.
+        </dd>
+      </dl>
+    </details>
+  </header>
+
+  <section id="page">
+    <div class="eyebrow">1 · The page</div>
+    <h2>What the agent writes</h2>
+    <p>
+      One stylesheet and two imports. <code>page</code> gives the page React's API and
+      <code>html</code>, a JSX-like tag that needs no compiler. The prototype's copy uses
+      <code>localhost:8797</code> and a throwaway repo in place of the URLs below.
+    </p>
+    <pre class="code" id="page-source"></pre>
+  </section>
+
+  <section id="load">
+    <div class="eyebrow">2 · The load</div>
+    <h2>Every request, and what esm.iterate.com did for it</h2>
+    <p id="load-intro"></p>
+    <div class="controls" id="controls" hidden>
+      <button type="button" id="cold">Load it cold</button>
+      <button type="button" class="secondary" id="warm">Load it again</button>
+      <span class="hint" id="status"></span>
+    </div>
+    <div class="legend">
+      <span style="--swatch: var(--accent)">request, as the service saw it</span>
+      <span style="--swatch: var(--service)">reading GitHub</span>
+      <span style="--swatch: var(--ok)">first paint with the viewer</span>
+    </div>
+    <div class="load">
+      <div class="trace" id="trace"><div class="empty">Loading…</div></div>
+      <div class="side">
+        <div class="viewer">
+          <iframe id="viewer" title="The page, running" loading="lazy"></iframe>
+          <div class="caption" id="viewer-caption"></div>
+        </div>
+        <dl class="state" id="state"></dl>
+      </div>
+    </div>
+  </section>
+
+  <section id="build">
+    <div class="eyebrow">3 · Where the files come from</div>
+    <h2>The bundling happens in CI, once per change</h2>
+    <ol class="steps">
+      <li>
+        <div>
+          <span class="when">In iterate/private</span>
+          <p>
+            Someone changes packages/ui and it merges to main. The source is <code>.tsx</code> that
+            imports <code>react</code>, <code>@base-ui/react</code>, <code>@codemirror/view</code> and
+            its own files as <code>#/components/ui/button.tsx</code>. A browser can run none of it as
+            written.
+          </p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <span class="when">In CI, the copy-packages workflow</span>
+          <p>
+            Copybara copies the source to iterate/packages. Then tsdown builds packages/ui. That's the
+            bundling: the code of every library ui imports goes into ui's output files, grouped into
+            chunks named by library (<code>vendor-react.mjs</code>, <code>vendor-base-ui.mjs</code>,
+            <code>vendor-codemirror.mjs</code>). Tailwind compiles <code>styles.css</code>. One more
+            commit puts the result in <code>packed/@iterate-com/ui/</code>. About 0.3 s of build.
+          </p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <span class="when">At load, esm.iterate.com</span>
+          <p>
+            The page asks for <code>@iterate-com/ui</code> at <code>ref=main</code>,
+            <code>path=./page</code>. The service looks up main's commit and redirects there. It reads
+            <code>packed/@iterate-com/ui/package.json</code> at that commit to find which file
+            <code>./page</code> means, and serves the file from GitHub. It rewrites the file's imports to
+            full esm.iterate.com URLs at the same commit: a browser can't resolve
+            <code>./vendor-react.mjs</code> against a URL whose file is named in a query parameter.
+          </p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <span class="when">At load, the browser</span>
+          <p>
+            It follows the imports. Each chunk has one URL, so each runs once. CodeMirror is only
+            imported with <code>import()</code>, so it downloads when the viewer first shows code.
+          </p>
+        </div>
+      </li>
+    </ol>
+    <p>
+      Worker packages (voice, docs, github-sync) are built the same way but not bundled. Their files
+      keep imports like <code>pako</code>, which the service points at esm.sh, and the platform's loader
+      fetches and locks per project. A worker has no React to keep single.
+    </p>
+  </section>
+
+  <section id="why">
+    <div class="eyebrow">4 · Why ui bundles its libraries</div>
+    <h2>With esm.sh supplying React, the page got two</h2>
+    <p>
+      The first prototype left ui's imports alone and pointed them at esm.sh, at the exact versions in
+      iterate's lockfile. esm.sh builds each package with its own settings written into the URL, and
+      works those settings out per package. The page's React and react-dom's React came out as two
+      URLs, so two copies ran.
+    </p>
+    <div class="failure">
+      <pre>
+the page's React        https://esm.sh/react@19.3.0/es2022/react.mjs
+react-dom's own React   https://esm.sh/react@19.3.0/X-ZEBiYXNlLXVp…/es2022/react.mjs
+
+Uncaught TypeError: Cannot read properties of null (reading 'useState')
+    at App (ui-demo.html:33)</pre>
+      <p>
+        CodeMirror has the same trap: two copies of <code>@codemirror/state</code> break the editor.
+        Bundling ui means one build decides every library's one copy.
+      </p>
+    </div>
+  </section>
+
+  <section id="size">
+    <div class="eyebrow">5 · Size</div>
+    <h2>Where the bytes are</h2>
+    <p>
+      ui's whole build, unminified, by library. CodeMirror is two-fifths of it and only downloads when
+      a code view opens.
+    </p>
+    <div class="sizes" id="sizes"></div>
+    <div class="facts" id="facts"></div>
+    <p>
+      React (and CodeMirror) could become peers, loaded from somewhere other than ui's build. That
+      only works if every importer reaches React by the same URL, which is what section 4 failed to
+      get from esm.sh. Bundled, the cost is repo bytes once per library version, not once per ui
+      build, because the vendor chunks don't change when ui's own code does.
+    </p>
+  </section>
+
+  <section id="live-data">
+    <div class="eyebrow">6 · Live data</div>
+    <h2>A real context instead of sample events</h2>
+    <p>
+      The demo feeds ContextView sample events. A live page signs its visitor in and reads a context.
+      The pieces exist: a project's hosts already serve the platform's sign-in (<code>/.auth/*</code>)
+      and API (<code>/api</code>), as Notes uses them, and the SDK's
+      <code>createIterateClient()</code> is written for a plain page. ui's build bundles that client
+      as a <code>live</code> entry, so its hooks share ui's React.
+    </p>
+    <pre class="code" id="live-source"></pre>
+    <p class="planned">
+      Built, not yet run: the <code>live</code> entry is in this build (130 KB), but no page has used it
+      against a running platform yet. That's the next prototype step.
+    </p>
+  </section>
+</main>
+
+<script type="application/json" id="recorded">null</script>
+<script>
+  (function () {
+    const $ = (selector) => document.querySelector(selector);
+    const LIVE = ["localhost", "127.0.0.1"].includes(location.hostname) && location.port === "8797";
+    const recorded = JSON.parse($("#recorded").textContent);
+    const SIZES = {"rows":[["CodeMirror",1159587],["React",564979],["Base UI",429802],["yaml",193348],["zod",169840],["Other",162897],["Our components",142567],["SDK client (capnweb + iterate)",133250]],"total":2956643};
+
+    const escape = (text) =>
+      String(text).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+    const kb = (n) => (n == null ? "" : n < 1024 ? `${n} B` : n < 1048576 ? `${Math.round(n / 1024)} KB` : `${(n / 1048576).toFixed(2)} MB`);
+    const short = (ref) => (/^[0-9a-f]{40}$/.test(ref || "") ? ref.slice(0, 7) : ref);
+    const params = (url) => {
+      const u = new URL(url, "http://localhost");
+      return {
+        name: decodeURIComponent(u.pathname.slice(1)),
+        ref: u.searchParams.get("ref"),
+        path: u.searchParams.get("path"),
+        repository: u.searchParams.get("repository"),
+      };
+    };
+
+    // ── 1. the page's source, as an agent would write it ──
+    const ui = (path) => `https://esm.iterate.com/@iterate-com/ui?repository=iterate/packages&ref=main&path=${path}`;
+    $("#page-source").innerHTML = [
+      `<span class="cm">&lt;!-- one stylesheet: every class ui's components use --&gt;</span>`,
+      `&lt;link rel="stylesheet" href="<span class="hl">${ui("./styles.css")}</span>" /&gt;`,
+      `&lt;div id="root" class="flex h-screen flex-col"&gt;&lt;/div&gt;`,
+      `&lt;script type="module"&gt;`,
+      `  import { html, render, useState } from "<span class="hl">${ui("./page")}</span>";`,
+      `  import { ContextView } from "<span class="hl">${ui("./components/context-view/context-view")}</span>";`,
+      ``,
+      `  const context = { events: [/* sample events */], caughtUp: true, processors: { rows: [] }, presence: { actors: [], rpcStubs: [] }, liveState: {} };`,
+      `  function App() {`,
+      `    const [state, setState] = useState({});`,
+      "    return html`&lt;${ContextView} title=\"/agents/demo\" context=${context} state=${state}",
+      "      onStateChange=${(patch) =&gt; setState((s) =&gt; ({ ...s, ...patch }))} className=\"min-h-0 flex-1\" /&gt;`;",
+      `  }`,
+      "  render(html`&lt;${App} /&gt;`, document.getElementById(\"root\"));",
+      `&lt;/script&gt;`,
+    ].join("\n");
+
+    $("#live-source").innerHTML = [
+      `<span class="cm">// the project's config worker: only a signed-in member gets the page</span>`,
+      `const denied = this.auth.require(request);`,
+      `if (denied) return denied;`,
+      `return new Response(page, { headers: { "content-type": "text/html" } });`,
+      ``,
+      `<span class="cm">// the page</span>`,
+      `import { createIterateClient, useContextStub, useIterateContext } from "<span class="hl">${ui("./live")}</span>";`,
+      `const { api } = await createIterateClient().authenticate(location.href); <span class="cm">// the host's /api, the session cookie</span>`,
+      `function App() {`,
+      `  const { stub } = useContextStub(() =&gt; api.projects.get(PROJECT).cd("/agents/demo"), []);`,
+      `  const context = useIterateContext(stub); <span class="cm">// events, processors, presence, live state</span>`,
+      "  return html`&lt;${ContextView} title=\"/agents/demo\" context=${context} … /&gt;`;",
+      `}`,
+    ].join("\n");
+
+    // ── 5. sizes ──
+    const biggest = SIZES.rows[0][1];
+    $("#sizes").innerHTML = SIZES.rows
+      .map(
+        ([name, bytes]) =>
+          `<div class="size"><span>${escape(name)}</span><span class="track"><span class="fill${name === "CodeMirror" ? " lazy" : ""}" style="width:${((bytes / biggest) * 100).toFixed(1)}%"></span></span><span class="n">${kb(bytes)}</span></div>`,
+      )
+      .join("");
+
+    // ── 2. the load ──
+    let run = LIVE ? { requests: [], milestones: [], external: [], document: null, t0: null } : recorded;
+    const viewer = $("#viewer");
+    if (LIVE) {
+      $("#mode").textContent =
+        "Live: the prototype on localhost:8797 is serving this page. Load it cold, then click an event in the viewer to watch CodeMirror arrive.";
+      $("#load-intro").textContent =
+        "Load it cold: the service forgets what it read from GitHub, and the browser caches nothing, as on a first visit after a new commit. Load it again: the service still holds the commit's files. Click a row for the service's steps.";
+      $("#controls").hidden = false;
+      $("#viewer-caption").textContent = "The page, served through esm.iterate.com (localhost:8797)";
+    } else {
+      $("#mode").textContent = recorded
+        ? `Recorded: a real cold load through the prototype on localhost:8797, ${recorded.capturedAt}. The viewer on the right runs the same files from this page's host instead, which works because ui's build has no imports left to resolve.`
+        : "No recorded run is embedded.";
+      $("#load-intro").textContent =
+        "A first visit right after a new commit: the service had read nothing yet, and the browser had nothing cached. Click a row for the service's steps.";
+      $("#viewer-caption").textContent = "The page, running the same files from this page's host";
+      viewer.src = "artifact-demo.html";
+    }
+
+    function rowsOf(current) {
+      const importers = new Map();
+      for (const request of current.requests)
+        for (const step of request.steps)
+          if (step.step === "rewrite")
+            for (const line of step.detail.imports) {
+              const match = line.match(/^(import\(\)|import) (\S+) → (\S+)$/);
+              // the first file to import it is the one that made the browser ask
+              if (match && !importers.has(match[3])) importers.set(match[3], { by: step.detail.file, dynamic: match[1] === "import()" });
+            }
+      return current.requests
+        .filter((request) => request.endedAt)
+        .map((request) => {
+          const p = params(request.url);
+          const exported = request.steps.find((s) => s.step === "export");
+          const redirect = request.steps.find((s) => s.step === "redirect");
+          const reads = request.steps.filter((s) => s.step === "github");
+          const fresh = reads.filter((s) => s.detail.ms != null);
+          const importer = importers.get(request.url);
+          let main;
+          let why;
+          if (request.status === 302) {
+            main = `${p.name} · path=${p.path}`;
+            why = `ref=${p.ref} → commit ${short(new URL(request.location, "http://x").searchParams.get("ref"))}`;
+          } else if (exported) {
+            main = `${p.name} · path=${p.path}`;
+            why = /\.css$/.test(exported.detail.file)
+              ? `the stylesheet, ${exported.detail.file}`
+              : `an entry: a two-line module re-exporting ${exported.detail.file}`;
+          } else {
+            main = p.path ? p.path.replace(/^\.\//, "") : request.url;
+            why = importer
+              ? `${importer.dynamic ? "import()ed" : "imported"} by ${importer.by.replace(/^\.\//, "")}`
+              : "";
+          }
+          const tags = [
+            `<span class="tag${request.status === 302 ? " s302" : ""}">${request.status}</span>`,
+            request.bytes ? `<span class="tag">${kb(request.bytes)}</span>` : "",
+            importer?.dynamic ? `<span class="tag lazy">on demand</span>` : "",
+            fresh.length ? `<span class="tag gh">GitHub ×${fresh.length}</span>` : "",
+            reads.length - fresh.length ? `<span class="tag">read before ×${reads.length - fresh.length}</span>` : "",
+          ].join("");
+          const detail = [
+            `GET ${request.url}`,
+            `→ ${request.status}${request.location ? ` ${request.location}` : ""}${request.type ? `  ${request.type.split(";")[0]}` : ""}${request.bytes ? `  ${kb(request.bytes)}` : ""}`,
+            "",
+            ...request.steps.map((step) => {
+              const at = `+${Math.max(0, step.at - request.startedAt)} ms`.padEnd(9);
+              const d = step.detail;
+              if (step.step === "request") return `${at}asked for   ${d.answer}`;
+              if (step.step === "github")
+                return `${at}github      ${d.read}${d.ms != null ? `  (${d.ms} ms${d.status ? `, ${d.status}` : ""})` : `  (${d.cache})`}`;
+              if (step.step === "redirect") return `${at}redirect    ${d.why}`;
+              if (step.step === "export") return `${at}export      ${d.path} is ${d.file}`;
+              if (step.step === "rewrite")
+                return [`${at}rewrite     ${d.file}: ${d.imports.length} import${d.imports.length === 1 ? "" : "s"}`, ...d.imports.map((line) => `             ${line}`)].join("\n");
+              return `${at}${step.step} ${JSON.stringify(d)}`;
+            }),
+            `+${request.endedAt - request.startedAt} ms`.padEnd(9) + "answered",
+          ].join("\n");
+          return { request, main, why, tags, detail, reads: fresh };
+        })
+        .sort((a, b) => a.request.startedAt - b.request.startedAt);
+    }
+
+    function draw(current) {
+      if (!current || !current.t0) {
+        $("#trace").innerHTML = `<div class="empty">${LIVE ? "Press “Load it cold”." : "No run recorded."}</div>`;
+        $("#state").innerHTML = "";
+        return;
+      }
+      const rows = rowsOf(current);
+      const t0 = current.t0;
+      // the scale runs to the first paint: what's fetched on demand later (a click) is listed, not drawn
+      const paint = current.milestones.find((m) => m.label.startsWith("First paint"));
+      const ends = paint
+        ? [paint.at, ...rows.filter((r) => r.request.startedAt <= paint.at).map((r) => r.request.endedAt)]
+        : [...rows.map((r) => r.request.endedAt), current.document ? t0 + current.document.end : t0];
+      const span = Math.max(100, Math.max(...ends) - t0) * 1.06;
+      const later = (t) => paint && t > paint.at + 50;
+      const pos = (t) => `${(((t - t0) / span) * 100).toFixed(2)}%`;
+      const width = (a, b) => `${(((b - a) / span) * 100).toFixed(2)}%`;
+      const step = [100, 250, 500, 1000, 2000, 5000, 10000].find((s) => span / s <= 3) || 20000;
+      const ticks = [];
+      for (let t = 0; t <= span * 0.92; t += step) ticks.push(`<span style="left:${((t / span) * 100).toFixed(2)}%">${t >= 1000 ? `${t / 1000} s` : `${t} ms`}</span>`);
+      const milestoneMarks = current.milestones.map((m) => `<u style="left:${pos(m.at)}" title="${escape(m.label)}"></u>`).join("");
+      const html = [`<div class="axis"><span>since start</span><span>request</span><span class="ticks">${ticks.join("")}</span></div>`];
+      if (current.document)
+        html.push(
+          `<details class="row"><summary><span class="t">+0 ms</span><span class="what"><span class="main">ui-demo.html</span><span class="why">the page itself, from the page's own host</span><span class="tags"><span class="tag">200</span></span></span><span class="bar"><i style="left:0;width:${width(t0, t0 + current.document.end)}"></i>${milestoneMarks}</span></summary><pre>GET /ui-demo.html\n→ the agent's HTML file. Not esm.iterate.com: wherever the page lives (a project's config worker, in real life).</pre></details>`,
+        );
+      const events = [
+        ...rows.map((row) => ({ at: row.request.startedAt, row })),
+        ...current.milestones.map((m) => ({ at: m.at, milestone: m })),
+      ].sort((a, b) => a.at - b.at);
+      for (const event of events) {
+        if (event.milestone) {
+          html.push(
+            `<details class="row milestone"><summary><span class="t">+${Math.round(event.at - t0)} ms</span><span class="what"><span class="main">${escape(event.milestone.label)}</span><span class="why">the first frame with ContextView in it</span></span><span class="bar">${milestoneMarks}</span></summary><pre>Reported by the page with postMessage after React's first render.</pre></details>`,
+          );
+          continue;
+        }
+        const { request, main, why, tags, detail, reads } = event.row;
+        const github = reads
+          .map((s) => `<b style="left:${pos(s.at - s.detail.ms)};width:${width(s.at - s.detail.ms, s.at)}"></b>`)
+          .join("");
+        const at = request.startedAt - t0;
+        const when = at >= 1000 ? `+${(at / 1000).toFixed(1)} s` : `+${Math.round(at)} ms`;
+        const bar = later(request.startedAt)
+          ? `<span class="later">on demand, after the first paint</span>`
+          : `<span class="bar"><i style="left:${pos(request.startedAt)};width:${width(request.startedAt, request.endedAt)}"></i>${github}${milestoneMarks}</span>`;
+        html.push(
+          `<details class="row"><summary><span class="t">${when}</span><span class="what"><span class="main">${escape(main)}</span>${why ? `<span class="why">${escape(why)}</span>` : ""}<span class="tags">${tags}</span></span>${bar}</summary><pre>${escape(detail)}</pre></details>`,
+        );
+      }
+      $("#trace").innerHTML = html.join("");
+
+      const files = rows.filter((r) => r.request.status === 200 && /\.m?js$/.test(params(r.request.url).path || ""));
+      const reactCopies = files.filter((r) => /vendor-react/.test(r.request.url)).length;
+      const bytes = rows.reduce((n, r) => n + (r.request.bytes || 0), 0);
+      const githubReads = rows.reduce((n, r) => n + r.reads.length, 0);
+      const rendered = current.milestones.find((m) => m.label.startsWith("First paint"));
+      const onDemand = rows.filter((r) => rendered && r.request.startedAt > rendered.at);
+      $("#state").innerHTML = [
+        ["Requests to esm.iterate.com", `${rows.length} (${rows.filter((r) => r.request.status === 302).length} redirects)`],
+        ["Downloaded", kb(bytes)],
+        ["JavaScript files running", String(files.length)],
+        ["Copies of React", String(reactCopies), reactCopies === 1 ? "good" : ""],
+        ["Requests to esm.sh", String(current.external.length), current.external.length === 0 ? "good" : ""],
+        ["Files read from GitHub", String(githubReads)],
+        ["First paint with the viewer", rendered ? `+${Math.round(rendered.at - t0)} ms` : "…"],
+        ["Fetched on demand, after it", onDemand.length ? `${onDemand.length} · ${kb(onDemand.reduce((n, r) => n + (r.request.bytes || 0), 0))}` : "none yet"],
+      ]
+        .map(([k, v, cls]) => `<div><dt>${escape(k)}</dt><dd class="${cls || ""}">${escape(v)}</dd></div>`)
+        .join("");
+
+      const upFront = rows.filter((r) => !rendered || r.request.startedAt <= rendered.at).reduce((n, r) => n + (r.request.bytes || 0), 0);
+      $("#facts").innerHTML = [
+        [kb(SIZES.total), "the whole build, unminified: 14 JavaScript files and styles.css"],
+        [kb(upFront), "downloaded before the first paint in this run (no CodeMirror)"],
+        ["1 file", "rewritten when one line of ContextView changed (context-view.mjs). React, Base UI and CodeMirror stay byte-identical until their versions change"],
+      ]
+        .map(([big, text]) => `<div><span class="big">${escape(big)}</span><span>${escape(text)}</span></div>`)
+        .join("");
+      window.__run = current;
+    }
+
+    if (!LIVE) {
+      draw(recorded);
+      return;
+    }
+
+    // ── live: drive the prototype ──
+    let lastId = 0;
+    let polling;
+    async function poll() {
+      const entries = await fetch(`/__log?since=${lastId}`).then((r) => r.json());
+      for (const entry of entries) {
+        lastId = Math.max(lastId, entry.id);
+        if (run.t0 && entry.startedAt >= run.t0 - 20 && !entry.url.startsWith("/__")) {
+          const i = run.requests.findIndex((r) => r.id === entry.id);
+          if (i >= 0) run.requests[i] = entry;
+          else run.requests.push(entry);
+        }
+      }
+      // the log holds a request once it has started: look again for any not yet answered
+      const open = run.requests.filter((r) => !r.endedAt).map((r) => r.id);
+      if (open.length) lastId = Math.min(lastId, Math.min(...open) - 1);
+      try {
+        const frame = viewer.contentWindow;
+        run.external = frame.performance
+          .getEntriesByType("resource")
+          .map((e) => e.name)
+          .filter((name) => new URL(name).origin !== location.origin && !name.includes("fonts.g"));
+      } catch {}
+      draw(run);
+    }
+    async function load(cold) {
+      $("#status").textContent = cold ? "Loading cold…" : "Loading again…";
+      await fetch("/__nocache?on=1");
+      if (cold) await fetch("/__forget");
+      lastId = (await fetch(`/__log?since=0`).then((r) => r.json())).reduce((n, e) => Math.max(n, e.id), 0);
+      run = { requests: [], milestones: [], external: [], document: null, t0: Date.now(), kind: cold ? "cold" : "again" };
+      viewer.src = `/ui-demo.html?run=${Date.now()}`;
+      clearInterval(polling);
+      polling = setInterval(poll, 400);
+    }
+    viewer.addEventListener("load", () => {
+      try {
+        const frame = viewer.contentWindow;
+        if (!frame.location.pathname.endsWith("ui-demo.html")) return;
+        const navigation = frame.performance.getEntriesByType("navigation")[0];
+        run.t0 = frame.performance.timeOrigin;
+        run.document = { end: navigation ? navigation.responseEnd : 0 };
+        run.capturedAt = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC";
+        $("#status").textContent = "Loaded. Click an event in the viewer to fetch CodeMirror.";
+      } catch {}
+    });
+    window.addEventListener("message", (event) => {
+      if (event.data?.type === "rendered" && run.t0) {
+        run.milestones = [{ at: event.data.at, label: "First paint with the viewer" }];
+        poll();
+      }
+    });
+    $("#cold").addEventListener("click", () => load(true));
+    $("#warm").addEventListener("click", () => load(false));
+    draw(null);
+  })();
+</script>

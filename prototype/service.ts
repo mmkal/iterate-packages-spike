@@ -1,69 +1,124 @@
-// PROTOTYPE of esm.iterate.com: serves packages built into a public GitHub repo's `packed/<name>/`
-// folder (what `pnpm pack` makes, minus scripts and devDependencies), for three consumers:
+// PROTOTYPE of esm.iterate.com: serves the builds committed in an iterate GitHub repo's
+// `packed/<name>/` folder (what `pnpm pack` makes, minus scripts and devDependencies).
 //
-//   GET /<owner>/<repo>/<name>@<ref>                  to npm, pnpm, yarn or bun: the npm tarball, as
-//                                                     pkg.pr.new serves the same path
-//   GET /<owner>/<repo>/<name>@<ref>[/<subpath>]?…    to anything else: an ES module (browsers, the
-//                                                     loader), as esm.sh serves a /pr/ path
+//   GET /<name>?repository=<owner>/<repo>&ref=<ref>&path=<path>[&external=a,b]
 //
-// so one URL, written once in a config's package.json, is what `npm install` fetches and what the
-// loader (and a page) imports.
+// Every parameter but `external` is required (spelled out while the design settles; Misha,
+// 2026-10-02):
+//   repository  an iterate/* GitHub repo
+//   ref         a commit, or a branch or tag (redirected to its commit)
+//   path        `.` or `./<export>` (a key of package.json's `exports`), or `./<file>` in the package
+//   external    packages to leave as bare imports (the platform's loader passes iterate,zod,…)
 //
-// A module's imports are rewritten as esm.sh rewrites them: relative ones and the package's own
-// subpaths to this service at the same commit, a package from the same repo at the same commit, an
-// npm dependency to esm.sh at the version package.json lists, and the `external` packages left bare
-// (the platform's loader binds `iterate` and `zod` itself). A branch or tag redirects to its commit,
-// so every module URL names one build forever. Worker-shaped: web APIs only.
+// Who asks decides what comes back: npm, pnpm, yarn and bun (by User-Agent) asking for `path=.`
+// get the npm tarball, anything else the ES module. So one URL in a config's package.json is what
+// `npm install` fetches and what the loader imports.
+//
+// A module's imports are rewritten to canonical URLs of this service: relative imports and the
+// package's own subpaths at the same commit, a package also in `packed/` at the same commit, an npm
+// dependency to esm.sh at the version package.json lists, and `external` packages left bare.
+// Worker-shaped: web APIs only. `trace` reports each step, for the prototype's explainer.
 import { init, parse } from "es-module-lexer";
 
 const ESM_SH = "https://esm.sh";
 const PACKED = "packed";
 /** Whose repos it serves (Misha, 2026-10-02: `iterate/<anything>`, maybe loosened one day). */
 const OWNERS = new Set(["iterate", "mmkal" /* SPIKE: the throwaway repo */]);
+/** Package managers, by the User-Agent each sends with a tarball request. */
+const PACKAGE_MANAGER = /^(npm|pnpm|yarn|bun)\//i;
+
+export type Trace = (step: string, detail: Record<string, unknown>) => void;
 
 export default {
-  fetch: (request: Request) => handle(request, globalThis.fetch),
+  fetch: (request: Request) => handle(request, globalThis.fetch, () => {}),
 };
 
-const route = /^\/([\w.-]+)\/([\w.-]+)\/((?:@[\w.-]+\/)?[\w.-]+)@([\w.-]+)(?:\/([^?]*))?$/;
-/** Package managers, by the User-Agent each sends with a tarball request. */
-const packageManager = /^(npm|pnpm|yarn|bun)\//i;
+/** The canonical URL of `name` at `params`: fixed parameter order, `/`, `@`, `,` and `:` unescaped,
+ *  so the same module always has the same URL (a browser loads one module per URL). */
+export function canonical(
+  name: string,
+  params: { repository: string; ref: string; path: string; external?: string },
+) {
+  const value = (v: string) =>
+    encodeURIComponent(v)
+      .replace(/%2F/g, "/")
+      .replace(/%40/g, "@")
+      .replace(/%2C/g, ",")
+      .replace(/%3A/g, ":");
+  const query = [
+    `repository=${value(params.repository)}`,
+    `ref=${value(params.ref)}`,
+    `path=${value(params.path)}`,
+  ];
+  if (params.external) query.push(`external=${value(params.external)}`);
+  return `/${name}?${query.join("&")}`;
+}
 
-export async function handle(request: Request, fetchFn: typeof fetch): Promise<Response> {
+export async function handle(
+  request: Request,
+  fetchFn: typeof fetch,
+  trace: Trace,
+): Promise<Response> {
   await init;
   const url = new URL(request.url);
-  const match = url.pathname.match(route);
-  if (!match) return text(404, "not found: /<owner>/<repo>/<name>@<ref>[/<subpath>]");
-  const [, owner, repo, name, ref, subpath = ""] = match as unknown as string[];
-  const tgz = !subpath && packageManager.test(request.headers.get("user-agent") || "");
-  if (!OWNERS.has(owner!)) return text(403, `serves iterate's repos only, not ${owner}/${repo}`);
-  const gh = new GitHub(owner!, repo!, fetchFn);
-  const sha = /^[0-9a-f]{40}$/.test(ref!) ? ref! : await gh.resolveRef(ref!);
+  const name = decodeURIComponent(url.pathname.slice(1));
+  if (!/^(@[\w.-]+\/)?[\w.-]+$/.test(name))
+    return text(404, "not found: /<name>?repository=…&ref=…&path=…");
+  const q = url.searchParams;
+  const missing = ["repository", "ref", "path"].filter((key) => !q.get(key));
+  if (missing.length)
+    return text(
+      400,
+      `${name}: ${missing.join(", ")} required (/<name>?repository=<owner>/<repo>&ref=<ref>&path=<path>)`,
+    );
+  const [owner, repo] = q.get("repository")!.split("/");
+  if (!owner || !repo) return text(400, "repository is <owner>/<repo>");
+  if (!OWNERS.has(owner)) return text(403, `serves iterate's repos only, not ${owner}/${repo}`);
+  const ref = q.get("ref")!;
+  const path = q.get("path")!;
+  if (!/^\.(\/[^?#]*)?$/.test(path)) return text(400, "path is `.`, `./<export>` or `./<file>`");
+  const external = q.get("external") || undefined;
+  const userAgent = request.headers.get("user-agent") || "";
+  const tarball = path === "." && PACKAGE_MANAGER.test(userAgent);
+  trace("request", {
+    name,
+    repository: `${owner}/${repo}`,
+    ref,
+    path,
+    external,
+    answer: tarball ? "tarball (a package manager asked)" : "module",
+  });
+
+  const gh = new GitHub(owner, repo, fetchFn, trace);
+  const sha = /^[0-9a-f]{40}$/.test(ref) ? ref : await gh.resolveRef(ref);
   if (!sha) return text(404, `${owner}/${repo} has no branch or tag ${ref}`);
   const headers = {
     "access-control-allow-origin": "*",
     "x-commit-key": `${owner}:${repo}:${sha}`,
     vary: "user-agent",
   };
-  if (tgz) {
-    const tarball = await gh.packTarball(sha, `${PACKED}/${name}`);
-    if (!tarball) return text(404, `${owner}/${repo}@${sha} has no ${PACKED}/${name}`);
-    return new Response(tarball, {
-      headers: { ...headers, "content-type": "application/gzip", "cache-control": cacheFor(ref!) },
+
+  if (tarball) {
+    const body = await gh.packTarball(sha, `${PACKED}/${name}`);
+    if (!body) return text(404, `${owner}/${repo}@${sha} has no ${PACKED}/${name}`);
+    return new Response(body, {
+      headers: { ...headers, "content-type": "application/gzip", "cache-control": cacheFor(ref) },
     });
   }
-  if (sha !== ref) {
-    // modules always live at a commit: a moving ref redirects, briefly cached
-    const to = new URL(url);
-    to.pathname = url.pathname.replace(`${name}@${ref}`, `${name}@${sha}`);
+  // a module always lives at one URL: a moving ref or another spelling redirects to it
+  const at = canonical(name, { repository: `${owner}/${repo}`, ref: sha, path, external });
+  if (`${url.pathname}${url.search}` !== at) {
+    trace("redirect", {
+      to: at,
+      why: sha !== ref ? `${ref} is ${sha.slice(0, 7)} today` : "the canonical spelling",
+    });
     return new Response(null, {
       status: 302,
-      headers: { ...headers, location: to.href, "cache-control": "public, max-age=60" },
+      headers: { ...headers, location: at, "cache-control": cacheFor(ref) },
     });
   }
-  const pkg = new Package(gh, sha, name!, url.searchParams);
   try {
-    const served = await pkg.serve(subpath);
+    const served = await new Package(gh, sha, name, external, trace).serve(path);
     return new Response(served.body, {
       headers: {
         ...headers,
@@ -85,83 +140,106 @@ const text = (status: number, body: string) =>
   });
 const cacheFor = (ref: string) =>
   /^[0-9a-f]{40}$/.test(ref) ? "public, max-age=31536000, immutable" : "public, max-age=60";
-
 const packageName = (specifier: string) =>
   specifier
     .split("/")
     .slice(0, specifier.startsWith("@") ? 2 : 1)
     .join("/");
 
+type Manifest = {
+  exports?: Record<string, string | Record<string, string>>;
+  dependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+};
+
 /** One package at one commit: `packed/<name>/` of the repo. */
 class Package {
   private gh: GitHub;
   private sha: string;
   private name: string;
-  private query: URLSearchParams;
-  constructor(gh: GitHub, sha: string, name: string, query: URLSearchParams) {
+  private external: string | undefined;
+  private trace: Trace;
+  private manifestPromise?: Promise<Manifest>;
+  constructor(
+    gh: GitHub,
+    sha: string,
+    name: string,
+    external: string | undefined,
+    trace: Trace,
+  ) {
     this.gh = gh;
     this.sha = sha;
     this.name = name;
-    this.query = query;
+    this.external = external;
+    this.trace = trace;
   }
 
-  private base = (name = this.name) => `/${this.gh.owner}/${this.gh.repo}/${name}@${this.sha}`;
-  private suffix = () => (this.query.size ? `?${this.query}` : "");
-  private externals = () => new Set((this.query.get("external") || "").split(",").filter(Boolean));
+  private url = (path: string, name = this.name) =>
+    canonical(name, {
+      repository: `${this.gh.owner}/${this.gh.repo}`,
+      ref: this.sha,
+      path,
+      external: this.external,
+    });
+  private externals = () => new Set((this.external || "").split(",").filter(Boolean));
 
-  private manifest = once(async () => {
-    const text = await this.gh.file(this.sha, `${PACKED}/${this.name}/package.json`);
-    if (text === undefined)
-      throw new NotFound(`${this.gh.owner}/${this.gh.repo}@${this.sha} has no ${PACKED}/${this.name}`);
-    return JSON.parse(text) as {
-      exports?: Record<string, string | Record<string, string>>;
-      dependencies?: Record<string, string>;
-      peerDependencies?: Record<string, string>;
-    };
-  });
-
-  /** An export's file (`./install` → `dist/install.mjs`), or undefined when it isn't an export. */
-  private async exportFile(subpath: string) {
-    const target = (await this.manifest()).exports?.[subpath ? `./${subpath}` : "."];
-    const file = typeof target === "string" ? target : target?.import || target?.default;
-    return file?.replace(/^\.\//, "");
+  private manifest() {
+    return (this.manifestPromise ??= this.gh
+      .file(this.sha, `${PACKED}/${this.name}/package.json`)
+      .then((text) => {
+        if (text === undefined)
+          throw new NotFound(
+            `${this.gh.owner}/${this.gh.repo}@${this.sha} has no ${PACKED}/${this.name}`,
+          );
+        return JSON.parse(text) as Manifest;
+      }));
   }
 
-  /** `subpath` as served: an export of a module is a stub re-exporting its file's URL (one module
-   *  per file, whichever entry reaches it), a module file is its code with every import rewritten,
-   *  and anything else (a stylesheet) is the file as built. */
-  async serve(subpath: string): Promise<{ body: string; type: string }> {
-    const entry = await this.exportFile(subpath);
-    const file = entry || subpath;
-    if (/\.css$/.test(file)) return { body: await this.file(file), type: "text/css; charset=utf-8" };
+  /** `path` as served: an export of a module is a stub re-exporting its file's URL (one module per
+   *  file, whichever entry reaches it), a module file is its code with every import rewritten, and
+   *  anything else (a stylesheet) is the file as built. */
+  async serve(path: string): Promise<{ body: string; type: string }> {
     const js = "application/javascript; charset=utf-8";
-    return { body: await this.module(subpath, entry), type: js };
+    const exported = (await this.manifest()).exports?.[path];
+    if (exported !== undefined) {
+      const file = typeof exported === "string" ? exported : exported.import || exported.default;
+      if (!file) throw new NotFound(`${this.name}'s export ${path} names no file`);
+      this.trace("export", { path, file });
+      if (!/\.m?js$/.test(file)) return this.asset(file);
+      const target = JSON.stringify(this.url(file));
+      const hasDefault = parse(await this.file(file))[1].some((e) => e.n === "default");
+      const body = `export * from ${target};${hasDefault ? ` export { default } from ${target};` : ""}\n`;
+      return { body, type: js };
+    }
+    if (/\.m?js$/.test(path)) return { body: await this.rewrite(path, await this.file(path)), type: js };
+    if (path.endsWith(".css")) return this.asset(path);
+    throw new NotFound(`${this.name} has no export or file ${path}`);
   }
 
-  private async module(subpath: string, entry: string | undefined): Promise<string> {
-    if (entry !== undefined || subpath === "") {
-      if (!entry) throw new NotFound(`${this.name} has no "." export`);
-      const target = JSON.stringify(`${this.base()}/${entry}${this.suffix()}`);
-      const code = await this.file(entry);
-      const hasDefault = parse(code)[1].some((e) => e.n === "default");
-      return `export * from ${target};${hasDefault ? ` export { default } from ${target};` : ""}\n`;
-    }
-    if (!/\.m?js$/.test(subpath)) throw new NotFound(`${this.name} has no export ./${subpath}`);
-    return this.rewrite(subpath, await this.file(subpath));
+  private async asset(path: string) {
+    return { body: await this.file(path), type: "text/css; charset=utf-8" };
   }
 
   private async file(path: string) {
-    const code = await this.gh.file(this.sha, `${PACKED}/${this.name}/${path}`);
+    const code = await this.gh.file(
+      this.sha,
+      `${PACKED}/${this.name}/${path.replace(/^\.\//, "")}`,
+    );
     if (code === undefined) throw new NotFound(`${this.name}@${this.sha} has no ${path}`);
     return code;
   }
 
   private async rewrite(path: string, code: string) {
-    const edits: { start: number; end: number; dynamic: boolean; to: string }[] = [];
+    const edits: { start: number; end: number; dynamic: boolean; from: string; to: string }[] = [];
     for (const imp of parse(code)[0]) {
       if (imp.d === -2 || !imp.n) continue;
-      edits.push({ start: imp.s, end: imp.e, dynamic: imp.d > -1, to: await this.target(path, imp.n) });
+      const to = await this.target(path, imp.n);
+      edits.push({ start: imp.s, end: imp.e, dynamic: imp.d > -1, from: imp.n, to });
     }
+    this.trace("rewrite", {
+      file: path,
+      imports: edits.map((e) => `${e.dynamic ? "import()" : "import"} ${e.from} → ${e.to}`),
+    });
     let out = code;
     for (const edit of edits.sort((a, b) => b.start - a.start))
       out =
@@ -171,36 +249,32 @@ class Package {
     return out;
   }
 
-  /** Where `specifier`, imported by `from`, loads from. */
+  /** Where `specifier`, imported by the package's file `from`, loads from. */
   private async target(from: string, specifier: string): Promise<string> {
     if (/^(cloudflare|node):/.test(specifier)) return specifier;
-    if (specifier.startsWith("./") || specifier.startsWith("../")) {
-      const path = new URL(specifier, `file:///${from}`).pathname.slice(1);
-      return `${this.base()}/${path}${this.suffix()}`;
-    }
+    if (specifier.startsWith("./") || specifier.startsWith("../"))
+      return this.url(`.${new URL(specifier, `file:///${from.replace(/^\.\//, "")}`).pathname}`);
     const dependency = packageName(specifier);
     const sub = specifier.slice(dependency.length);
     if (this.externals().has(dependency) || this.externals().has(specifier)) return specifier;
-    if (dependency === this.name) return `${this.base()}${sub}${this.suffix()}`;
+    if (dependency === this.name) return this.url(`.${sub}`);
     const manifest = await this.manifest();
     const version = manifest.dependencies?.[dependency] || manifest.peerDependencies?.[dependency];
-    if (!version) throw new Error(`${this.name}/${from} imports ${specifier}, which package.json doesn't list`);
+    if (!version)
+      throw new Error(`${this.name}/${from} imports ${specifier}, which package.json doesn't list`);
     // a package built into the same repo comes from the same commit
     if (await this.gh.file(this.sha, `${PACKED}/${dependency}/package.json`))
-      return `${this.base(dependency)}${sub}${this.suffix()}`;
-    const esm = new URLSearchParams({ target: this.query.get("target") || "es2022" });
-    // the package's other dependencies at the exact versions it was built with, so esm.sh builds
-    // every package in the graph against the same React, the same @codemirror/state, …
-    // (one `deps` for every URL: esm.sh writes it into each build's path, so a package reached
-    // through two different lists would be two modules — two Reacts)
-    const pinned = Object.entries(manifest.dependencies || {}).filter(([, v]) =>
-      /^\d+\.\d+\.\d+(-[\w.]+)?$/.test(v),
-    );
-    if (pinned.length) esm.set("deps", pinned.map(([name, v]) => `${name}@${v}`).join(","));
-    if (this.externals().size) esm.set("external", [...this.externals()].join(","));
+      return this.url(`.${sub}`, dependency);
+    const esm = new URLSearchParams({ target: "es2022" });
+    if (this.external) esm.set("external", this.external);
     return `${ESM_SH}/${dependency}@${version}${sub}?${esm}`;
   }
 }
+
+/** What has been read from GitHub, by `<owner>/<repo>/<sha>/<path>`: immutable, so kept. */
+const files = new Map<string, Promise<string | undefined>>();
+/** Forgets everything read (the prototype's "cold load"). */
+export const forget = () => files.clear();
 
 /** A public GitHub repository, read anonymously: refs over git's smart HTTP (no API rate limit),
  *  files from raw.githubusercontent.com, whole commits from codeload. The real service would keep
@@ -209,48 +283,57 @@ class GitHub {
   owner: string;
   repo: string;
   private fetchFn: typeof fetch;
-  constructor(owner: string, repo: string, fetchFn: typeof fetch) {
+  private trace: Trace;
+  constructor(owner: string, repo: string, fetchFn: typeof fetch, trace: Trace) {
     this.owner = owner;
     this.repo = repo;
     this.fetchFn = fetchFn;
+    this.trace = trace;
   }
-  private static files = new Map<string, Promise<string | undefined>>();
 
   async resolveRef(ref: string): Promise<string | undefined> {
-    const response = await this.fetchFn(
-      `https://github.com/${this.owner}/${this.repo}.git/info/refs?service=git-upload-pack`,
-    );
+    const started = Date.now();
+    const url = `https://github.com/${this.owner}/${this.repo}.git/info/refs?service=git-upload-pack`;
+    const response = await this.fetchFn(url);
     if (!response.ok) return undefined;
     const refs = await response.text();
     // pkt-lines: `<4 hex length><40 hex sha> <ref>`, the first with `\0<capabilities>` after it
     for (const name of [`refs/heads/${ref}`, `refs/tags/${ref}^{}`, `refs/tags/${ref}`]) {
       const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const sha = refs.match(new RegExp(`([0-9a-f]{40}) ${escaped}(?:\0|\n|$)`))?.[1];
-      if (sha) return sha;
+      if (sha) {
+        this.trace("github", { read: `${name} is ${sha.slice(0, 7)}`, url, ms: Date.now() - started });
+        return sha;
+      }
     }
     return undefined;
   }
 
   file(sha: string, path: string) {
     const key = `${this.owner}/${this.repo}/${sha}/${path}`;
-    if (!GitHub.files.has(key))
-      GitHub.files.set(
-        key,
-        this.fetchFn(`https://raw.githubusercontent.com/${key}`).then(async (r) => {
-          if (r.status === 404) return undefined;
-          if (!r.ok) throw new Error(`raw.githubusercontent.com answered ${r.status} for ${key}`);
-          return r.text();
-        }),
-      );
-    return GitHub.files.get(key)!;
+    const url = `https://raw.githubusercontent.com/${key}`;
+    const cached = files.get(key);
+    if (cached) {
+      this.trace("github", { read: path, cache: "hit (read at this commit before)" });
+      return cached;
+    }
+    const started = Date.now();
+    const reading = this.fetchFn(url).then(async (r) => {
+      this.trace("github", { read: path, url, status: r.status, ms: Date.now() - started });
+      if (r.status === 404) return undefined;
+      if (!r.ok) throw new Error(`raw.githubusercontent.com answered ${r.status} for ${key}`);
+      return r.text();
+    });
+    files.set(key, reading);
+    return reading;
   }
 
   /** `folder` of the repo at `sha` as an npm tarball: codeload's tarball of the commit, cut down to
    *  that folder and re-rooted at `package/`, as npm packs one. */
   async packTarball(sha: string, folder: string) {
-    const response = await this.fetchFn(
-      `https://codeload.github.com/${this.owner}/${this.repo}/tar.gz/${sha}`,
-    );
+    const started = Date.now();
+    const url = `https://codeload.github.com/${this.owner}/${this.repo}/tar.gz/${sha}`;
+    const response = await this.fetchFn(url);
     if (!response.ok) throw new Error(`codeload answered ${response.status}`);
     const tar = new Uint8Array(
       await new Response(response.body!.pipeThrough(new DecompressionStream("gzip"))).arrayBuffer(),
@@ -262,14 +345,14 @@ class GitHub {
       if (entry.type === "file" && path.startsWith(`${folder}/`))
         files.push({ path: `package/${path.slice(folder.length + 1)}`, data: entry.data });
     }
+    this.trace("github", {
+      read: `the commit's tarball: ${files.length} files under ${folder}/`,
+      url,
+      ms: Date.now() - started,
+    });
     if (!files.some((f) => f.path === "package/package.json")) return undefined;
     return new Response(writeTar(files)).body!.pipeThrough(new CompressionStream("gzip"));
   }
-}
-
-function once<T>(make: () => Promise<T>) {
-  let value: Promise<T> | undefined;
-  return () => (value ??= make());
 }
 
 const decoder = new TextDecoder();
@@ -294,7 +377,8 @@ function* readTar(tar: Uint8Array) {
     const prefix = field(header, 345, 155);
     const path = longPath || (prefix ? `${prefix}/` : "") + field(header, 0, 100);
     longPath = undefined;
-    yield { path, type: type === "0" || type === "\0" ? ("file" as const) : ("other" as const), data };
+    const kind = type === "0" || type === "\0" ? ("file" as const) : ("other" as const);
+    yield { path, type: kind, data };
   }
 }
 
