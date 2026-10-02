@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>No-build page</title>
+<pre id="out">loading…</pre>
+<script type="module">
+  // Three entries of two of our packages, straight from the service: no build, no import map.
+  import * as frames from "/mmkal/iterate-packages-spike/@iterate-com/docs@main/frames";
+  import * as comments from "/mmkal/iterate-packages-spike/@iterate-com/docs@main/comments";
+  import * as call from "/mmkal/iterate-packages-spike/@iterate-com/voice@main/call";
+
+  const loaded = performance.getEntriesByType("resource").map((entry) => entry.name);
+  const count = (part) => loaded.filter((name) => name.includes(part)).length;
+  document.getElementById("out").textContent = JSON.stringify(
+    {
+      framesExports: Object.keys(frames).length,
+      commentsExports: Object.keys(comments).length,
+      callExports: Object.keys(call),
+      // docs/frames imports ./comments.mjs, and so does the comments entry: one module
+      commentsModuleFetches: count("/dist/comments.mjs"),
+      // docs and voice both list zod ^4 as a peer: one esm.sh URL, one zod
+      zodBuildFetches: loaded.filter((name) => /esm\.sh\/zod@[\d.]+\/es2022\/zod\.mjs/.test(name)).length,
+      resources: loaded,
+    },
+    null,
+    2,
+  );
+</script>

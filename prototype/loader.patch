@@ -1,0 +1,48 @@
+diff --git a/core/os/src/context/module-resolution.ts b/core/os/src/context/module-resolution.ts
+index c70e7b6751..065689d883 100644
+--- a/core/os/src/context/module-resolution.ts
++++ b/core/os/src/context/module-resolution.ts
+@@ -69,6 +69,9 @@ export type ResolveOptions = {
+  *  become refusals. */
+ const ENTRY_FILES = ["worker.ts", "worker.js", "index.ts", "index.js"];
+ const ESM_ORIGIN = "https://esm.sh";
++// SPIKE: esm.iterate.com, run locally (scratchpad/esm-iterate/service.ts)
++const PACKAGES_ORIGIN = "http://localhost:8797";
++const MODULE_ORIGINS = [ESM_ORIGIN, PACKAGES_ORIGIN];
+ 
+ /** How long one esm.sh module may take to arrive before its resolution is the platform's failure. */
+ const ESM_FETCH_TIMEOUT_MS = 20_000;
+@@ -381,7 +384,8 @@ async function lockedDependencyGraph(
+ function esmModuleName(url: URL): string {
+   const path = url.pathname.replace(/\.m?js$/, "");
+   const query = url.search ? `~${url.search.slice(1).replace(/[^\w.=@-]+/g, "_")}` : "";
+-  return `node_modules/.esm${path}${query}.js`.replace(/\/+/g, "/");
++  const root = url.origin === ESM_ORIGIN ? ".esm" : `.${url.host.replace(/[^\w.-]/g, "_")}`;
++  return `node_modules/${root}${path}${query}.js`.replace(/\/+/g, "/");
+ }
+ 
+ /** esm.sh's URL for the package dependency `name` is listed as, at its version. The source imports
+@@ -402,6 +406,11 @@ function esmPackageBase(name: string, version: string, where: string): string {
+       );
+     return `${ESM_ORIGIN}/${alias[1]}@${alias[2] || "latest"}`;
+   }
++  // SPIKE: a build in a GitHub repo's packed/<name>/, as the service's tarball URL names it
++  const packed = version.startsWith(`${PACKAGES_ORIGIN}/tgz/`)
++    ? version.slice(PACKAGES_ORIGIN.length + 4).match(/^\/([\w.-]+)\/([\w.-]+)\/((?:@[\w.-]+\/)?[\w.-]+)@([0-9a-f]{40})$/)
++    : undefined;
++  if (packed) return `${PACKAGES_ORIGIN}/${packed[1]}/${packed[2]}/${packed[3]}@${packed[4]}`;
+   if (!version.startsWith("https://pkg.pr.new/")) return `${ESM_ORIGIN}/${name}@${version}`;
+   const build = pkgPrNewBuildOf(version);
+   if (!build)
+@@ -511,9 +520,9 @@ async function resolveFromEsm(
+           throw new Error(
+             `${url.pathname} needs the Node.js builtin ${specifier}, which loaded workers do not have`,
+           );
+-        } else if (specifier.startsWith("/") || isRelative(specifier)) {
++        } else if (specifier.startsWith("/") || isRelative(specifier) || /^https?:\/\//.test(specifier)) {
+           const child = new URL(specifier, url);
+-          if (child.origin !== ESM_ORIGIN)
++          if (!MODULE_ORIGINS.includes(child.origin))
+             throw new Error(`${url.pathname} imports ${child.href}, outside esm.sh`);
+           const childName = esmModuleName(child);
+           load(child.href, childName);
