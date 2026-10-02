@@ -1,7 +1,8 @@
+import { r as __toESM } from "./rolldown-runtime.mjs";
 import { n as require_client } from "./vendor-react.mjs";
 import { Children, Component, Fragment, Profiler, PureComponent, StrictMode, Suspense, cloneElement, createContext, createElement, createRef, forwardRef, isValidElement, lazy, memo, startTransition, use, useActionState, useCallback, useContext, useDebugValue, useDeferredValue, useEffect, useId, useImperativeHandle, useInsertionEffect, useLayoutEffect, useMemo, useOptimistic, useReducer, useRef, useState, useSyncExternalStore, useTransition, version } from "./react.mjs";
 //#region ../../node_modules/.pnpm/htm@3.1.1/node_modules/htm/dist/htm.module.js
-var import_client = require_client();
+var import_client = /* @__PURE__ */ __toESM(require_client(), 1);
 var n = function(t, s, r, e) {
 	var u;
 	s[0] = 0;

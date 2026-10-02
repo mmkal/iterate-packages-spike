@@ -1268,7 +1268,7 @@ function isHoverOpenEvent(openEventType) {
 }
 //#endregion
 //#region ../../node_modules/.pnpm/@base-ui+react@1.8.0_@types+react@19.3.0_react-dom@19.3.0_react@19.3.0__react@19.3.0/node_modules/@base-ui/react/floating-ui-react/components/FloatingDelayGroup.mjs
-var import_jsx_runtime = require_jsx_runtime();
+var import_jsx_runtime = /* @__PURE__ */ __toESM(require_jsx_runtime(), 1);
 const FloatingDelayGroupContext = /*#__PURE__*/ import_react.createContext({
 	hasProvider: false,
 	timeoutMs: 0,

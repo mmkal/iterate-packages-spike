@@ -13,7 +13,7 @@ function plainLeftClick(event) {
 }
 //#endregion
 //#region src/components/context-view/context-path.tsx
-var import_jsx_runtime = require_jsx_runtime();
+var import_jsx_runtime = /* @__PURE__ */ __toESM(require_jsx_runtime(), 1);
 /** The links a context view's rows use for the paths they name (a child context's): provided by
 *  `ContextView` from its `pathLinks`, absent where the app gave none. */
 const ContextPathLinksContext = (0, import_react.createContext)(void 0);

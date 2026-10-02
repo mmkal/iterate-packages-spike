@@ -11391,6 +11391,27 @@ var require_react_dom_client_production = /* @__PURE__ */ __commonJSMin(((export
 		listenToAllSupportedEvents(container);
 		return new ReactDOMRoot(options);
 	};
+	exports.hydrateRoot = function(container, initialChildren, options) {
+		if (!isValidContainer(container)) throw Error(formatProdErrorMessage(299));
+		var isStrictMode = !1, identifierPrefix = "", onUncaughtError = defaultOnUncaughtError, onCaughtError = defaultOnCaughtError, onRecoverableError = defaultOnRecoverableError, formState = null;
+		null !== options && void 0 !== options && (!0 === options.unstable_strictMode && (isStrictMode = !0), void 0 !== options.identifierPrefix && (identifierPrefix = options.identifierPrefix), void 0 !== options.onUncaughtError && (onUncaughtError = options.onUncaughtError), void 0 !== options.onCaughtError && (onCaughtError = options.onCaughtError), void 0 !== options.onRecoverableError && (onRecoverableError = options.onRecoverableError), void 0 !== options.formState && (formState = options.formState));
+		initialChildren = createFiberRoot(container, 1, !0, initialChildren, null != options ? options : null, isStrictMode, identifierPrefix, formState, onUncaughtError, onCaughtError, onRecoverableError, defaultOnDefaultTransitionIndicator);
+		initialChildren.context = getContextForSubtree(null);
+		options = initialChildren.current;
+		isStrictMode = requestUpdateLane();
+		isStrictMode = getBumpedLaneForHydrationByLane(isStrictMode);
+		identifierPrefix = createUpdate(isStrictMode);
+		identifierPrefix.callback = null;
+		enqueueUpdate(options, identifierPrefix, isStrictMode);
+		options = isStrictMode;
+		initialChildren.current.lanes = options;
+		markRootUpdated$1(initialChildren, options);
+		ensureRootIsScheduled(initialChildren);
+		container[internalContainerInstanceKey] = initialChildren.current;
+		listenToAllSupportedEvents(container);
+		return new ReactDOMHydrationRoot(initialChildren);
+	};
+	exports.version = "19.3.0";
 }));
 //#endregion
 //#region ../../node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/client.js

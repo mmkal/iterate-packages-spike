@@ -5,7 +5,7 @@ import { L as Prec, M as keymap, P as placeholder, T as EditorView, f as acceptC
 import { n as basicSetup, t as vsCodeLight } from "./dist2.mjs";
 //#region src/components/code-editor.client.tsx
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
-var import_jsx_runtime = require_jsx_runtime();
+var import_jsx_runtime = /* @__PURE__ */ __toESM(require_jsx_runtime(), 1);
 /**
 * The editable sibling of `CodeBlock`: a controlled CodeMirror
 * surface used as a composer input. The editor instance is created once and

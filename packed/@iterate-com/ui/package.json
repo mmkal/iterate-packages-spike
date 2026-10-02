@@ -6,6 +6,8 @@
   "exports": {
     "./page": "./dist/page.mjs",
     "./react": "./dist/react.mjs",
+    "./react/jsx-runtime": "./dist/react/jsx-runtime.mjs",
+    "./react-dom/client": "./dist/react-dom/client.mjs",
     "./live": "./dist/live.mjs",
     "./components/context-view/context-view": "./dist/components/context-view/context-view.mjs",
     "./styles.css": "./dist/styles.css"
