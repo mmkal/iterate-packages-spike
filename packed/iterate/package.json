@@ -171,23 +171,8 @@
       "optional": true
     }
   },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260929.1",
-    "@types/node": "^24.13.6",
-    "@types/react": "^19.3.0",
-    "react": "^19.3.0",
-    "tsdown": "0.23.0",
-    "typescript": "^7.0.2",
-    "vitest": "^4.1.11",
-    "@types/ws": "^8.18.1"
-  },
   "bin": {
     "iterate": "./bin/iterate.js"
-  },
-  "scripts": {
-    "build": "tsdown",
-    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && tsc -p tsconfig.cli.json",
-    "test": "vitest run"
   },
   "gitHead": "3202ce3878732c3790c9a475751d7fa42777955e"
 }

@@ -24,14 +24,5 @@
   "dependencies": {
     "@iterate-com/capnweb": "^0.12.2"
   },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260929.1",
-    "tsdown": "0.23.0",
-    "typescript": "^7.0.2"
-  },
-  "scripts": {
-    "build": "tsdown",
-    "typecheck": "tsc --noEmit"
-  },
   "gitHead": "3202ce3878732c3790c9a475751d7fa42777955e"
 }
