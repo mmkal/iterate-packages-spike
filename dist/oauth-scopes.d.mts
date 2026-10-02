@@ -1,0 +1,2 @@
+import { i as OAuthScopes, n as OAuthScope, r as OAuthScopeDescriptions, t as ConsentScope } from "./oauth-scopes-C39GcUVJ.mjs";
+export { ConsentScope, OAuthScope, OAuthScopeDescriptions, OAuthScopes };
