@@ -837,7 +837,7 @@ function Spinner({ className, ...props }) {
 		...props
 	});
 }
-import.meta.env.SSR || lazy(async () => {
+lazy(async () => {
 	const [{ CodeBlock }, { javascript }, { markdown }] = await Promise.all([
 		import("../../code-block.client.mjs"),
 		import("@codemirror/lang-javascript"),
@@ -855,7 +855,7 @@ import.meta.env.SSR || lazy(async () => {
 		language: languages[language]
 	}) };
 });
-const LazySerializedBlock = import.meta.env.SSR ? () => null : lazy(async () => ({ default: (await import("../../code-block.client.mjs")).SerializedObjectCodeBlock }));
+const LazySerializedBlock = lazy(async () => ({ default: (await import("../../code-block.client.mjs")).SerializedObjectCodeBlock }));
 /** Any value as YAML or JSON, with a button to copy each (code-block.client.tsx). */
 function SerializedObjectCodeBlock(props) {
 	return /* @__PURE__ */ jsx(Suspense, {
@@ -1567,7 +1567,7 @@ function isObject(value) {
 }
 //#endregion
 //#region src/components/code-editor.tsx
-const LazyEditor = import.meta.env.SSR ? () => null : lazy(async () => {
+const LazyEditor = lazy(async () => {
 	return { default: (await import("../../code-editor.client.mjs")).CodeEditor };
 });
 function CodeEditor(props) {
