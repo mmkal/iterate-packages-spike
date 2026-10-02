@@ -20,7 +20,9 @@ type Logged = {
   steps: { at: number; step: string; detail: Record<string, unknown> }[];
 };
 const log: Logged[] = [];
-let noStore = false;
+// the prototype's browsers keep nothing (production caches a commit's files forever), so a page
+// loaded twice reaches this server twice
+let noStore = true;
 let next = 1;
 
 createServer(async (req, res) => {

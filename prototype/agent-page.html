@@ -2,11 +2,11 @@
 <meta charset="utf-8" />
 <title>Stream viewer</title>
 <!-- Needs the esm.iterate.com prototype on localhost:8797 (node prototype/serve.ts). -->
-<link rel="stylesheet" href="http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./styles.css" />
+<link rel="stylesheet" href="http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/styles.css" />
 <div id="root" class="flex h-screen flex-col"></div>
 <script type="module">
-  import { html, render, useState } from "http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./page";
-  import { ContextView } from "http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./components/context-view/context-view";
+  import { html, render, useState } from "http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/page";
+  import { ContextView } from "http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/components/context-view/context-view";
 
   const at = (s) => new Date(Date.UTC(2026, 9, 2, 13, 0, s)).toISOString();
   const context = {

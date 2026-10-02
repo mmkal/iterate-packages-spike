@@ -5,12 +5,12 @@
 <!-- The whole page an agent writes: one stylesheet, two imports, no build step, no import map.
      The stylesheet and both imports name @iterate-com/ui at `main`; esm.iterate.com sends each to
      the commit `main` is at. -->
-<link rel="stylesheet" href="/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./styles.css" />
+<link rel="stylesheet" href="/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/styles.css" />
 <body class="m-0">
   <div id="root" class="flex h-screen flex-col"></div>
   <script type="module">
-    import { html, render, useState } from "/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./page";
-    import { ContextView } from "/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./components/context-view/context-view";
+    import { html, render, useState } from "/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/page";
+    import { ContextView } from "/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/components/context-view/context-view";
 
     // Sample events. A live page reads a real context instead (the `live` entry).
     const at = (s) => new Date(Date.UTC(2026, 9, 2, 13, 0, s)).toISOString();

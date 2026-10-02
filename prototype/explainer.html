@@ -713,11 +713,19 @@
           A public service that turns npm packages into browser modules on request. Our worker
           packages' npm dependencies still come from it. Our browser package no longer does (section 4).
         </dd>
-        <dt>ref, commit</dt>
+        <dt>specifier</dt>
         <dd>
-          <code>ref=main</code> names whatever main is now. esm.iterate.com answers it with a
-          redirect to the commit (a 40-character sha), so every file's URL names one build forever and
-          can be cached forever.
+          What a package.json lists for a dependency, in pnpm's syntax: <code>1.2.3</code>,
+          <code>^1.2.3</code>, or <code>github:iterate/packages#main&amp;path:packed/@iterate-com/ui</code>
+          (a folder of a GitHub repo, at a branch). An esm.iterate.com URL is
+          <code>/&lt;name&gt;@&lt;specifier&gt;/&lt;subpath&gt;</code>, with the specifier written as
+          one path segment by <code>encodeURIComponent</code>.
+        </dd>
+        <dt>branch, commit</dt>
+        <dd>
+          <code>#main</code> in a specifier names whatever main is now. esm.iterate.com answers it
+          with a redirect to the same URL at the commit (a 40-character sha), so every file's URL names
+          one build forever and can be cached forever.
         </dd>
         <dt>one URL, one module</dt>
         <dd>
@@ -734,7 +742,7 @@
     <p>
       Two shapes of the same page. Each is a whole file: save it anywhere and open it while the
       prototype runs on <code>localhost:8797</code>. In production the URLs would start
-      <code>https://esm.iterate.com/</code> and name <code>repository=iterate/packages</code>.
+      <code>https://esm.iterate.com/</code> and name <code>github:iterate/packages</code>.
     </p>
     <details class="shape" open>
       <summary>
@@ -764,10 +772,12 @@
         that same React: its <code>useQuery</code> runs beside ContextView with one React on the page.
       </p>
       <p>
-        One line per entry. With query-parameter URLs, a single <code>"@iterate-com/ui/"</code> line
-        can't cover the whole package: the browser resolves the rest of the name as a relative URL,
-        which drops the query, and refuses it ("blocked due to backtracking"). A path-shaped URL
-        would let one line map all of ui.
+        One line per package. The URL is <code>&lt;name&gt;@&lt;specifier&gt;/&lt;subpath&gt;</code>,
+        and the specifier is pnpm's own (<code>github:iterate/packages#main&amp;path:packed/@iterate-com/ui</code>)
+        written as one path segment by <code>encodeURIComponent</code>. The browser resolves
+        <code>@iterate-com/ui/&lt;anything&gt;</code> by adding it to the end of the mapped URL, so one
+        line covers every component. npm packages use the same scheme
+        (<code>/@tanstack/react-query@5</code>), which esm.iterate.com sends on to esm.sh.
       </p>
       <div class="copyable">
         <button type="button" class="secondary copy" data-copy="importmap">Copy the file</button>
@@ -833,12 +843,13 @@
         <div>
           <span class="when">At load, esm.iterate.com</span>
           <p>
-            The page asks for <code>@iterate-com/ui</code> at <code>ref=main</code>,
-            <code>path=./page</code>. The service looks up main's commit and redirects there. It reads
-            <code>packed/@iterate-com/ui/package.json</code> at that commit to find which file
-            <code>./page</code> means, and serves the file from GitHub. It rewrites the file's imports to
-            full esm.iterate.com URLs at the same commit: a browser can't resolve
-            <code>./vendor-react.mjs</code> against a URL whose file is named in a query parameter.
+            The page asks for <code>@iterate-com/ui</code> at
+            <code>github:iterate/packages#main&amp;path:packed/@iterate-com/ui</code>, subpath
+            <code>page</code>. The service looks up main's commit and redirects to the same URL at that
+            commit. It reads that folder's <code>package.json</code> to find which file
+            <code>./page</code> means (and checks its <code>name</code>), and serves the file from GitHub.
+            It rewrites the file's imports to full URLs at the same commit, so each chunk has one URL
+            whichever branch name or spelling the page used.
           </p>
         </div>
       </li>
@@ -929,21 +940,21 @@ Uncaught TypeError: Cannot read properties of null (reading 'useState')
       String(text).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
     const kb = (n) => (n == null ? "" : n < 1024 ? `${n} B` : n < 1048576 ? `${Math.round(n / 1024)} KB` : `${(n / 1048576).toFixed(2)} MB`);
     const short = (ref) => (/^[0-9a-f]{40}$/.test(ref || "") ? ref.slice(0, 7) : ref);
+    // `/<name>@<encodeURIComponent(specifier)>[/<subpath>]`, as specifier.ts parses it
     const params = (url) => {
       const u = new URL(url, "http://localhost");
-      return {
-        name: decodeURIComponent(u.pathname.slice(1)),
-        ref: u.searchParams.get("ref"),
-        path: u.searchParams.get("path"),
-        repository: u.searchParams.get("repository"),
-      };
+      const match = u.pathname.match(/^\/((?:@[^/@]+\/)?[^/@]+)@([^/]+)(?:\/(.*))?$/);
+      if (!match) return { name: u.pathname, specifier: "", subpath: "", ref: "" };
+      const specifier = decodeURIComponent(match[2]);
+      return { name: match[1], specifier, subpath: match[3] || "", ref: (specifier.match(/#([^&]+)/) || [])[1] || "" };
     };
 
     // ── 1. the page's source, as an agent would write it ──
-    const ui = (path) => `https://esm.iterate.com/@iterate-com/ui?repository=iterate/packages&ref=main&path=${path}`;
+    const ui = (subpath) =>
+      `https://esm.iterate.com/@iterate-com/ui@${encodeURIComponent("github:iterate/packages#main&path:packed/@iterate-com/ui")}/${subpath}`;
     // the page in each shape, as an agent writes it, working against the prototype
     // (scratchpad agent-page.html and importmap-demo.html)
-    const PAGES = { plain: "<!doctype html>\n<meta charset=\"utf-8\" />\n<title>Stream viewer<\/title>\n<!-- Needs the esm.iterate.com prototype on localhost:8797 (node prototype/serve.ts). -->\n<link rel=\"stylesheet\" href=\"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./styles.css\" />\n<div id=\"root\" class=\"flex h-screen flex-col\"><\/div>\n<script type=\"module\">\n  import { html, render, useState } from \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./page\";\n  import { ContextView } from \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./components/context-view/context-view\";\n\n  const at = (s) => new Date(Date.UTC(2026, 9, 2, 13, 0, s)).toISOString();\n  const context = {\n    events: [\n      { offset: 1, type: \"events.iterate.com/itx/created\", createdAt: at(0), payload: { path: \"/agents/demo\" }, source: { platform: true } },\n      { offset: 2, type: \"chat/message-sent\", createdAt: at(4), payload: { text: \"What's on the calendar tomorrow?\" }, source: { principal: { actor: \"user:misha\" } } },\n      { offset: 3, type: \"chat/message-sent\", createdAt: at(8), payload: { text: \"One thing: a huddle with Jonas at 11.\" }, source: { processor: { slug: \"agent\", version: \"1\" } } },\n    ],\n    caughtUp: true,\n    processors: { rows: [] },\n    presence: { actors: [], rpcStubs: [] },\n    liveState: {},\n  };\n\n  function App() {\n    const [state, setState] = useState({});\n    return html`<${ContextView} title=\"/agents/demo\" context=${context} state=${state}\n      onStateChange=${(patch) => setState((s) => ({ ...s, ...patch }))} className=\"min-h-0 flex-1\" />`;\n  }\n  render(html`<${App} />`, document.getElementById(\"root\"));\n<\/script>\n", importmap: "<!doctype html>\n<meta charset=\"utf-8\" />\n<title>Stream viewer, with an import map<\/title>\n<!-- The import map names where each bare import comes from. React, react-dom/client and\n     react/jsx-runtime are ui's own (the copy its components use), so anything else that imports\n     `react` gets the same one: here, a library from esm.sh built with `?external=react`. -->\n<script type=\"importmap\">\n  {\n    \"imports\": {\n      \"react\": \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./react\",\n      \"react/jsx-runtime\": \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./react/jsx-runtime\",\n      \"react-dom/client\": \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./react-dom/client\",\n      \"@iterate-com/ui/components/context-view/context-view\": \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./components/context-view/context-view\",\n      \"htm\": \"https://esm.sh/htm@3.1.1\",\n      \"@tanstack/react-query\": \"https://esm.sh/@tanstack/react-query@5?external=react\"\n    }\n  }\n<\/script>\n<link rel=\"stylesheet\" href=\"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./styles.css\" />\n<div id=\"root\" class=\"flex h-screen flex-col\"><\/div>\n<script type=\"module\">\n  import { createElement, useState } from \"react\";\n  import { createRoot } from \"react-dom/client\";\n  import htm from \"htm\";\n  import { QueryClient, QueryClientProvider, useQuery } from \"@tanstack/react-query\";\n  import { ContextView } from \"@iterate-com/ui/components/context-view/context-view\";\n\n  const html = htm.bind(createElement);\n  const at = (s) => new Date(Date.UTC(2026, 9, 2, 13, 0, s)).toISOString();\n  const sample = [\n    { offset: 1, type: \"events.iterate.com/itx/created\", createdAt: at(0), payload: { path: \"/agents/demo\" }, source: { platform: true } },\n    { offset: 2, type: \"chat/message-sent\", createdAt: at(4), payload: { text: \"What's on the calendar tomorrow?\" }, source: { principal: { actor: \"user:misha\" } } },\n    { offset: 3, type: \"chat/message-sent\", createdAt: at(8), payload: { text: \"One thing: a huddle with Jonas at 11.\" }, source: { processor: { slug: \"agent\", version: \"1\" } } },\n  ];\n\n  function App() {\n    const [state, setState] = useState({});\n    // a hook from a library esm.sh built: with a second React it would throw on its first render\n    const events = useQuery({ queryKey: [\"events\"], queryFn: () => new Promise((resolve) => setTimeout(() => resolve(sample), 300)) });\n    const context = { events: events.data || [], caughtUp: events.isSuccess, processors: { rows: [] }, presence: { actors: [], rpcStubs: [] }, liveState: {} };\n    return html`<${ContextView} title=${`/agents/demo \u00b7 react-query ${events.status}`} context=${context} state=${state}\n      onStateChange=${(patch) => setState((s) => ({ ...s, ...patch }))} className=\"min-h-0 flex-1\" />`;\n  }\n  createRoot(document.getElementById(\"root\")).render(html`<${QueryClientProvider} client=${new QueryClient()}><${App} /><\//>`);\n<\/script>\n" };
+    const PAGES = { plain: "<!doctype html>\n<meta charset=\"utf-8\" />\n<title>Stream viewer<\/title>\n<!-- Needs the esm.iterate.com prototype on localhost:8797 (node prototype/serve.ts). -->\n<link rel=\"stylesheet\" href=\"http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/styles.css\" />\n<div id=\"root\" class=\"flex h-screen flex-col\"><\/div>\n<script type=\"module\">\n  import { html, render, useState } from \"http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/page\";\n  import { ContextView } from \"http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/components/context-view/context-view\";\n\n  const at = (s) => new Date(Date.UTC(2026, 9, 2, 13, 0, s)).toISOString();\n  const context = {\n    events: [\n      { offset: 1, type: \"events.iterate.com/itx/created\", createdAt: at(0), payload: { path: \"/agents/demo\" }, source: { platform: true } },\n      { offset: 2, type: \"chat/message-sent\", createdAt: at(4), payload: { text: \"What's on the calendar tomorrow?\" }, source: { principal: { actor: \"user:misha\" } } },\n      { offset: 3, type: \"chat/message-sent\", createdAt: at(8), payload: { text: \"One thing: a huddle with Jonas at 11.\" }, source: { processor: { slug: \"agent\", version: \"1\" } } },\n    ],\n    caughtUp: true,\n    processors: { rows: [] },\n    presence: { actors: [], rpcStubs: [] },\n    liveState: {},\n  };\n\n  function App() {\n    const [state, setState] = useState({});\n    return html`<${ContextView} title=\"/agents/demo\" context=${context} state=${state}\n      onStateChange=${(patch) => setState((s) => ({ ...s, ...patch }))} className=\"min-h-0 flex-1\" />`;\n  }\n  render(html`<${App} />`, document.getElementById(\"root\"));\n<\/script>\n", importmap: "<!doctype html>\n<meta charset=\"utf-8\" />\n<title>Stream viewer, with an import map<\/title>\n<!-- The import map names where each bare import comes from: one line maps every subpath of\n     @iterate-com/ui. `react`, `react/\u2026` and `react-dom/\u2026` are ui's own React (the copy its\n     components use), so anything else that imports `react` gets the same one: here react-query,\n     an npm package esm.iterate.com sends to esm.sh, built with `?external=react`. -->\n<script type=\"importmap\">\n  {\n    \"imports\": {\n      \"@iterate-com/ui/\": \"http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/\",\n      \"react\": \"http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/react\",\n      \"react/\": \"http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/react/\",\n      \"react-dom/\": \"http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/react-dom/\",\n      \"htm\": \"http://localhost:8797/htm@3.1.1\",\n      \"@tanstack/react-query\": \"http://localhost:8797/@tanstack/react-query@5?external=react\"\n    }\n  }\n<\/script>\n<link rel=\"stylesheet\" href=\"http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/styles.css\" />\n<div id=\"root\" class=\"flex h-screen flex-col\"><\/div>\n<script type=\"module\">\n  import { createElement, useState } from \"react\";\n  import { createRoot } from \"react-dom/client\";\n  import htm from \"htm\";\n  import { QueryClient, QueryClientProvider, useQuery } from \"@tanstack/react-query\";\n  import { ContextView } from \"@iterate-com/ui/components/context-view/context-view\";\n\n  const html = htm.bind(createElement);\n  const at = (s) => new Date(Date.UTC(2026, 9, 2, 13, 0, s)).toISOString();\n  const sample = [\n    { offset: 1, type: \"events.iterate.com/itx/created\", createdAt: at(0), payload: { path: \"/agents/demo\" }, source: { platform: true } },\n    { offset: 2, type: \"chat/message-sent\", createdAt: at(4), payload: { text: \"What's on the calendar tomorrow?\" }, source: { principal: { actor: \"user:misha\" } } },\n    { offset: 3, type: \"chat/message-sent\", createdAt: at(8), payload: { text: \"One thing: a huddle with Jonas at 11.\" }, source: { processor: { slug: \"agent\", version: \"1\" } } },\n  ];\n\n  function App() {\n    const [state, setState] = useState({});\n    // a hook from a library esm.sh built: with a second React it would throw on its first render\n    const events = useQuery({ queryKey: [\"events\"], queryFn: () => new Promise((resolve) => setTimeout(() => resolve(sample), 300)) });\n    const context = { events: events.data || [], caughtUp: events.isSuccess, processors: { rows: [] }, presence: { actors: [], rpcStubs: [] }, liveState: {} };\n    return html`<${ContextView} title=${`/agents/demo \u00b7 react-query ${events.status}`} context=${context} state=${state}\n      onStateChange=${(patch) => setState((s) => ({ ...s, ...patch }))} className=\"min-h-0 flex-1\" />`;\n  }\n  createRoot(document.getElementById(\"root\")).render(html`<${QueryClientProvider} client=${new QueryClient()}><${App} /><\//>`);\n<\/script>\n" };
     for (const [shape, file] of Object.entries(PAGES))
       $(`#source-${shape}`).innerHTML = escape(file).replace(
         /(?:http:\/\/localhost:8797|https:\/\/esm\.sh)\/.*?(?=&quot;)/g,
@@ -971,7 +982,7 @@ Uncaught TypeError: Cannot read properties of null (reading 'useState')
       `return new Response(page, { headers: { "content-type": "text/html" } });`,
       ``,
       `<span class="cm">// the page</span>`,
-      `import { createIterateClient, useContextStub, useIterateContext } from "<span class="hl">${ui("./live")}</span>";`,
+      `import { createIterateClient, useContextStub, useIterateContext } from "<span class="hl">${ui("live")}</span>";`,
       `const { api } = await createIterateClient().authenticate(location.href); <span class="cm">// the host's /api, the session cookie</span>`,
       `function App() {`,
       `  const { stub } = useContextStub(() =&gt; api.projects.get(PROJECT).cd("/agents/demo"), []);`,
@@ -1031,15 +1042,15 @@ Uncaught TypeError: Cannot read properties of null (reading 'useState')
           let main;
           let why;
           if (request.status === 302) {
-            main = `${p.name} · path=${p.path}`;
-            why = `ref=${p.ref} → commit ${short(new URL(request.location, "http://x").searchParams.get("ref"))}`;
+            main = `${p.name} · ${p.subpath || "."}`;
+            why = `#${p.ref} → commit ${short(params(request.location).ref)}`;
           } else if (exported) {
-            main = `${p.name} · path=${p.path}`;
+            main = `${p.name} · ${p.subpath || "."}`;
             why = /\.css$/.test(exported.detail.file)
               ? `the stylesheet, ${exported.detail.file}`
               : `an entry: a two-line module re-exporting ${exported.detail.file}`;
           } else {
-            main = p.path ? p.path.replace(/^\.\//, "") : request.url;
+            main = p.subpath || request.url;
             why = importer
               ? `${importer.dynamic ? "import()ed" : "imported"} by ${importer.by.replace(/^\.\//, "")}`
               : "";
@@ -1126,7 +1137,7 @@ Uncaught TypeError: Cannot read properties of null (reading 'useState')
       }
       $("#trace").innerHTML = html.join("");
 
-      const files = rows.filter((r) => r.request.status === 200 && /\.m?js$/.test(params(r.request.url).path || ""));
+      const files = rows.filter((r) => r.request.status === 200 && /\.m?js$/.test(params(r.request.url).subpath));
       const reactCopies = files.filter((r) => /vendor-react/.test(r.request.url)).length;
       const bytes = rows.reduce((n, r) => n + (r.request.bytes || 0), 0);
       const githubReads = rows.reduce((n, r) => n + r.reads.length, 0);

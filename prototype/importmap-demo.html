@@ -1,22 +1,23 @@
 <!doctype html>
 <meta charset="utf-8" />
 <title>Stream viewer, with an import map</title>
-<!-- The import map names where each bare import comes from. React, react-dom/client and
-     react/jsx-runtime are ui's own (the copy its components use), so anything else that imports
-     `react` gets the same one: here, a library from esm.sh built with `?external=react`. -->
+<!-- The import map names where each bare import comes from: one line maps every subpath of
+     @iterate-com/ui. `react`, `react/…` and `react-dom/…` are ui's own React (the copy its
+     components use), so anything else that imports `react` gets the same one: here react-query,
+     an npm package esm.iterate.com sends to esm.sh, built with `?external=react`. -->
 <script type="importmap">
   {
     "imports": {
-      "react": "http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./react",
-      "react/jsx-runtime": "http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./react/jsx-runtime",
-      "react-dom/client": "http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./react-dom/client",
-      "@iterate-com/ui/components/context-view/context-view": "http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./components/context-view/context-view",
-      "htm": "https://esm.sh/htm@3.1.1",
-      "@tanstack/react-query": "https://esm.sh/@tanstack/react-query@5?external=react"
+      "@iterate-com/ui/": "http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/",
+      "react": "http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/react",
+      "react/": "http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/react/",
+      "react-dom/": "http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/react-dom/",
+      "htm": "http://localhost:8797/htm@3.1.1",
+      "@tanstack/react-query": "http://localhost:8797/@tanstack/react-query@5?external=react"
     }
   }
 </script>
-<link rel="stylesheet" href="http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./styles.css" />
+<link rel="stylesheet" href="http://localhost:8797/@iterate-com/ui@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fui/styles.css" />
 <div id="root" class="flex h-screen flex-col"></div>
 <script type="module">
   import { createElement, useState } from "react";

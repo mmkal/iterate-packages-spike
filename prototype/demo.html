@@ -4,9 +4,9 @@
 <pre id="out">loading…</pre>
 <script type="module">
   // Three entries of two of our packages, straight from the service: no build, no import map.
-  import * as frames from "/@iterate-com/docs?repository=mmkal/iterate-packages-spike&ref=main&path=./frames";
-  import * as comments from "/@iterate-com/docs?repository=mmkal/iterate-packages-spike&ref=main&path=./comments";
-  import * as call from "/@iterate-com/voice?repository=mmkal/iterate-packages-spike&ref=main&path=./call";
+  import * as frames from "/@iterate-com/docs@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fdocs/frames";
+  import * as comments from "/@iterate-com/docs@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fdocs/comments";
+  import * as call from "/@iterate-com/voice@github%3Ammkal%2Fiterate-packages-spike%23main%26path%3Apacked%2F%40iterate-com%2Fvoice/call";
 
   const loaded = performance.getEntriesByType("resource").map((entry) => entry.name);
   const count = (part) => loaded.filter((name) => name.includes(part)).length;

@@ -8,15 +8,15 @@ const platform: PlatformModules = {
   imports: Object.fromEntries(platformEntries.map((e) => [`node_modules/${e}.js`, []])),
 };
 
-test("packages in a GitHub repo's packed/ load through the esm.iterate.com prototype", { timeout: 120_000 }, async () => {
+test("packages at <name>@<encodeURIComponent(pnpm specifier)> load through the esm.iterate.com prototype", { timeout: 120_000 }, async () => {
   const store = new Map<string, string>();
   const { modules } = await resolveModules(
     {
       "package.json": JSON.stringify({
         main: "worker.ts",
         dependencies: {
-          "@iterate-com/voice": "http://localhost:8797/@iterate-com/voice?repository=mmkal/iterate-packages-spike&ref=9d08465d4f273f4be264302901dae3a7718724e3&path=.",
-          "@iterate-com/docs": "http://localhost:8797/@iterate-com/docs?repository=mmkal/iterate-packages-spike&ref=9d08465d4f273f4be264302901dae3a7718724e3&path=.",
+          "@iterate-com/voice": "http://localhost:8797/@iterate-com/voice@github%3Ammkal%2Fiterate-packages-spike%239d08465d4f273f4be264302901dae3a7718724e3%26path%3Apacked%2F%40iterate-com%2Fvoice",
+          "@iterate-com/docs": "http://localhost:8797/@iterate-com/docs@github%3Ammkal%2Fiterate-packages-spike%239d08465d4f273f4be264302901dae3a7718724e3%26path%3Apacked%2F%40iterate-com%2Fdocs",
         },
       }),
       "worker.ts": `import * as voice from "@iterate-com/voice"; import { installVoice } from "@iterate-com/voice/install"; import { findQuote } from "@iterate-com/docs/anchor"; import * as docs from "@iterate-com/docs";
@@ -40,5 +40,5 @@ test("packages in a GitHub repo's packed/ load through the esm.iterate.com proto
   }
   // shared chunks load once, whichever entry reaches them
   expect(names.filter((n) => n.includes("install-DuW0NyzX"))).toHaveLength(1);
-  expect(names.filter((n) => n.includes("docs~") && n.includes("comments.mjs"))).toHaveLength(1);
+  expect(names.filter((n) => n.includes("iterate-com/docs@") && n.includes("comments"))).toHaveLength(1);
 });

@@ -1,5 +1,5 @@
 diff --git a/core/os/src/context/module-resolution.ts b/core/os/src/context/module-resolution.ts
-index c70e7b6751..f6a3a0945b 100644
+index c70e7b6751..fb25f99cff 100644
 --- a/core/os/src/context/module-resolution.ts
 +++ b/core/os/src/context/module-resolution.ts
 @@ -69,6 +69,9 @@ export type ResolveOptions = {
@@ -12,9 +12,15 @@ index c70e7b6751..f6a3a0945b 100644
  
  /** How long one esm.sh module may take to arrive before its resolution is the platform's failure. */
  const ESM_FETCH_TIMEOUT_MS = 20_000;
-@@ -381,7 +384,8 @@ async function lockedDependencyGraph(
+@@ -379,9 +382,13 @@ async function lockedDependencyGraph(
+  *  (`/hono@>=3.9.0/validator?target=es2022` → `node_modules/.esm/hono@>=3.9.0/validator~target=es2022.js`).
+  *  Synchronous, so an import is rewritten before its target arrives. */
  function esmModuleName(url: URL): string {
-   const path = url.pathname.replace(/\.m?js$/, "");
+-  const path = url.pathname.replace(/\.m?js$/, "");
++  // SPIKE: no `%` in a module name: esm.iterate.com's paths hold an encoded specifier
++  // (`github%3Aiterate%2Fpackages…`), and a name the runtime decoded while resolving a relative
++  // import would grow a `/` it doesn't have
++  const path = url.pathname.replace(/\.m?js$/, "").replace(/%([0-9A-F]{2})/gi, "_$1");
    const query = url.search ? `~${url.search.slice(1).replace(/[^\w.=@-]+/g, "_")}` : "";
 -  return `node_modules/.esm${path}${query}.js`.replace(/\/+/g, "/");
 +  const root = url.origin === ESM_ORIGIN ? ".esm" : `.${url.host.replace(/[^\w.-]/g, "_")}`;
@@ -22,24 +28,26 @@ index c70e7b6751..f6a3a0945b 100644
  }
  
  /** esm.sh's URL for the package dependency `name` is listed as, at its version. The source imports
-@@ -402,6 +406,16 @@ function esmPackageBase(name: string, version: string, where: string): string {
+@@ -402,6 +409,18 @@ function esmPackageBase(name: string, version: string, where: string): string {
        );
      return `${ESM_ORIGIN}/${alias[1]}@${alias[2] || "latest"}`;
    }
-+  // SPIKE: a build in an iterate repo's packed/<name>/: the URL package.json lists is the one npm
-+  // installs and the one the loader imports (esm.iterate.com answers each by who asks)
++  // SPIKE: esm.iterate.com, `<origin>/<name>@<encodeURIComponent(pnpm specifier)>`: the URL a
++  // package.json lists is the one npm installs and the one the loader imports (the service answers
++  // each by who asks). Loaded only at a commit: `github:<owner>/<repo>#<40-hex sha>[&path:<folder>]`.
 +  if (version.startsWith(`${PACKAGES_ORIGIN}/`)) {
-+    const packed = new URL(version);
-+    if (!/^[0-9a-f]{40}$/.test(packed.searchParams.get("ref") || "") || packed.searchParams.get("path") !== ".")
++    const segment = version.slice(`${PACKAGES_ORIGIN}/${name}@`.length);
++    const specifier = !segment.includes("/") && decodeURIComponent(segment);
++    if (!specifier || !/^github:[^#]+#[0-9a-f]{40}(&path:.+)?$/.test(specifier))
 +      throw new Error(
-+        `${where}: package.json lists ${name} as ${version}; pin it at a commit: ${PACKAGES_ORIGIN}/<name>?repository=<owner>/<repo>&ref=<40-hex sha>&path=.`,
++        `${where}: package.json lists ${name} as ${version}; pin it at a commit: ${PACKAGES_ORIGIN}/${name}@<encodeURIComponent("github:<owner>/<repo>#<40-hex sha>&path:<folder>")>`,
 +      );
 +    return version;
 +  }
    if (!version.startsWith("https://pkg.pr.new/")) return `${ESM_ORIGIN}/${name}@${version}`;
    const build = pkgPrNewBuildOf(version);
    if (!build)
-@@ -511,9 +525,9 @@ async function resolveFromEsm(
+@@ -511,9 +530,9 @@ async function resolveFromEsm(
            throw new Error(
              `${url.pathname} needs the Node.js builtin ${specifier}, which loaded workers do not have`,
            );
@@ -51,15 +59,15 @@ index c70e7b6751..f6a3a0945b 100644
              throw new Error(`${url.pathname} imports ${child.href}, outside esm.sh`);
            const childName = esmModuleName(child);
            load(child.href, childName);
-@@ -544,7 +558,12 @@ async function resolveFromEsm(
+@@ -544,7 +563,12 @@ async function resolveFromEsm(
    for (const specifier of lock.specifiers) {
      const name = packageName(specifier);
      const base = bases[name]!;
 -    load(`${base}${specifier.slice(name.length)}?${query}`, moduleOfSpecifier(specifier));
 +    const subpath = specifier.slice(name.length);
-+    // SPIKE: esm.iterate.com names the export in `path` (its URL ends `path=.`) and takes `external`
++    // SPIKE: esm.iterate.com takes the subpath after the specifier, and `external` alone
 +    const href = base.startsWith(`${PACKAGES_ORIGIN}/`)
-+      ? `${base}${subpath}&external=${lock.externals.join(",")}`
++      ? `${base}${subpath}?external=${lock.externals.join(",")}`
 +      : `${base}${subpath}?${query}`;
 +    load(href, moduleOfSpecifier(specifier));
    }
