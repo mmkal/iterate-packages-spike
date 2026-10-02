@@ -6,6 +6,8 @@ export default {
     page: "src/page.ts",
     react: "src/react.ts",
     live: "src/live.ts",
+    "react/jsx-runtime": "src/jsx-runtime.ts",
+    "react-dom/client": "src/react-dom-client.ts",
     "components/context-view/context-view": "src/components/context-view/context-view.tsx",
   },
   format: "esm",

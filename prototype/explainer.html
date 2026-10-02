@@ -180,6 +180,21 @@
     overflow-x: auto;
     line-height: 1.55;
   }
+  .copyable {
+    position: relative;
+    min-width: 0;
+  }
+  section > *,
+  header > * {
+    min-width: 0;
+  }
+  .copyable .copy {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 13px;
+    padding: 5px 10px;
+  }
   .code .hl {
     color: var(--accent);
     font-weight: 500;
@@ -670,10 +685,15 @@
     <h2>What the agent writes</h2>
     <p>
       One stylesheet and two imports. <code>page</code> gives the page React's API and
-      <code>html</code>, a JSX-like tag that needs no compiler. The prototype's copy uses
-      <code>localhost:8797</code> and a throwaway repo in place of the URLs below.
+      <code>html</code>, a JSX-like tag that needs no compiler. This is the whole file: save it
+      anywhere and open it while the prototype runs on <code>localhost:8797</code>. In production
+      the URLs would start <code>https://esm.iterate.com/</code> and name
+      <code>repository=iterate/packages</code>.
     </p>
-    <pre class="code" id="page-source"></pre>
+    <div class="copyable">
+      <button type="button" class="secondary copy" id="copy-page">Copy the file</button>
+      <pre class="code" id="page-source"></pre>
+    </div>
   </section>
 
   <section id="load">
@@ -841,23 +861,24 @@ Uncaught TypeError: Cannot read properties of null (reading 'useState')
 
     // ── 1. the page's source, as an agent would write it ──
     const ui = (path) => `https://esm.iterate.com/@iterate-com/ui?repository=iterate/packages&ref=main&path=${path}`;
-    $("#page-source").innerHTML = [
-      `<span class="cm">&lt;!-- one stylesheet: every class ui's components use --&gt;</span>`,
-      `&lt;link rel="stylesheet" href="<span class="hl">${ui("./styles.css")}</span>" /&gt;`,
-      `&lt;div id="root" class="flex h-screen flex-col"&gt;&lt;/div&gt;`,
-      `&lt;script type="module"&gt;`,
-      `  import { html, render, useState } from "<span class="hl">${ui("./page")}</span>";`,
-      `  import { ContextView } from "<span class="hl">${ui("./components/context-view/context-view")}</span>";`,
-      ``,
-      `  const context = { events: [/* sample events */], caughtUp: true, processors: { rows: [] }, presence: { actors: [], rpcStubs: [] }, liveState: {} };`,
-      `  function App() {`,
-      `    const [state, setState] = useState({});`,
-      "    return html`&lt;${ContextView} title=\"/agents/demo\" context=${context} state=${state}",
-      "      onStateChange=${(patch) =&gt; setState((s) =&gt; ({ ...s, ...patch }))} className=\"min-h-0 flex-1\" /&gt;`;",
-      `  }`,
-      "  render(html`&lt;${App} /&gt;`, document.getElementById(\"root\"));",
-      `&lt;/script&gt;`,
-    ].join("\n");
+    // the file as an agent writes it, working against the prototype (scratchpad agent-page.html)
+    const AGENT_PAGE = "<!doctype html>\n<meta charset=\"utf-8\" />\n<title>Stream viewer<\/title>\n<!-- Needs the esm.iterate.com prototype on localhost:8797 (node prototype/serve.ts). -->\n<link rel=\"stylesheet\" href=\"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./styles.css\" />\n<div id=\"root\" class=\"flex h-screen flex-col\"><\/div>\n<script type=\"module\">\n  import { html, render, useState } from \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./page\";\n  import { ContextView } from \"http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./components/context-view/context-view\";\n\n  const at = (s) => new Date(Date.UTC(2026, 9, 2, 13, 0, s)).toISOString();\n  const context = {\n    events: [\n      { offset: 1, type: \"events.iterate.com/itx/created\", createdAt: at(0), payload: { path: \"/agents/demo\" }, source: { platform: true } },\n      { offset: 2, type: \"chat/message-sent\", createdAt: at(4), payload: { text: \"What's on the calendar tomorrow?\" }, source: { principal: { actor: \"user:misha\" } } },\n      { offset: 3, type: \"chat/message-sent\", createdAt: at(8), payload: { text: \"One thing: a huddle with Jonas at 11.\" }, source: { processor: { slug: \"agent\", version: \"1\" } } },\n    ],\n    caughtUp: true,\n    processors: { rows: [] },\n    presence: { actors: [], rpcStubs: [] },\n    liveState: {},\n  };\n\n  function App() {\n    const [state, setState] = useState({});\n    return html`<${ContextView} title=\"/agents/demo\" context=${context} state=${state}\n      onStateChange=${(patch) => setState((s) => ({ ...s, ...patch }))} className=\"min-h-0 flex-1\" />`;\n  }\n  render(html`<${App} />`, document.getElementById(\"root\"));\n<\/script>\n";
+    $("#page-source").innerHTML = escape(AGENT_PAGE).replace(
+      /http:\/\/localhost:8797\/.*?(?=&quot;)/g,
+      (url) => `<span class="hl">${url}</span>`,
+    );
+    $("#copy-page").addEventListener("click", async (event) => {
+      try {
+        await navigator.clipboard.writeText(AGENT_PAGE);
+        event.target.textContent = "Copied";
+      } catch {
+        const range = document.createRange();
+        range.selectNodeContents($("#page-source"));
+        getSelection().removeAllRanges();
+        getSelection().addRange(range);
+        event.target.textContent = "Selected: press ⌘C";
+      }
+    });
 
     $("#live-source").innerHTML = [
       `<span class="cm">// the project's config worker: only a signed-in member gets the page</span>`,

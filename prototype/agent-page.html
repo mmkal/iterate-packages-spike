@@ -1,0 +1,30 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Stream viewer</title>
+<!-- Needs the esm.iterate.com prototype on localhost:8797 (node prototype/serve.ts). -->
+<link rel="stylesheet" href="http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./styles.css" />
+<div id="root" class="flex h-screen flex-col"></div>
+<script type="module">
+  import { html, render, useState } from "http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./page";
+  import { ContextView } from "http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./components/context-view/context-view";
+
+  const at = (s) => new Date(Date.UTC(2026, 9, 2, 13, 0, s)).toISOString();
+  const context = {
+    events: [
+      { offset: 1, type: "events.iterate.com/itx/created", createdAt: at(0), payload: { path: "/agents/demo" }, source: { platform: true } },
+      { offset: 2, type: "chat/message-sent", createdAt: at(4), payload: { text: "What's on the calendar tomorrow?" }, source: { principal: { actor: "user:misha" } } },
+      { offset: 3, type: "chat/message-sent", createdAt: at(8), payload: { text: "One thing: a huddle with Jonas at 11." }, source: { processor: { slug: "agent", version: "1" } } },
+    ],
+    caughtUp: true,
+    processors: { rows: [] },
+    presence: { actors: [], rpcStubs: [] },
+    liveState: {},
+  };
+
+  function App() {
+    const [state, setState] = useState({});
+    return html`<${ContextView} title="/agents/demo" context=${context} state=${state}
+      onStateChange=${(patch) => setState((s) => ({ ...s, ...patch }))} className="min-h-0 flex-1" />`;
+  }
+  render(html`<${App} />`, document.getElementById("root"));
+</script>

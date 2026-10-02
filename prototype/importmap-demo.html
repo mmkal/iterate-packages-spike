@@ -1,0 +1,45 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Stream viewer, with an import map</title>
+<!-- The import map names where each bare import comes from. React, react-dom/client and
+     react/jsx-runtime are ui's own (the copy its components use), so anything else that imports
+     `react` gets the same one: here, a library from esm.sh built with `?external=react`. -->
+<script type="importmap">
+  {
+    "imports": {
+      "react": "http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./react",
+      "react/jsx-runtime": "http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./react/jsx-runtime",
+      "react-dom/client": "http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./react-dom/client",
+      "@iterate-com/ui/components/context-view/context-view": "http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./components/context-view/context-view",
+      "htm": "https://esm.sh/htm@3.1.1",
+      "@tanstack/react-query": "https://esm.sh/@tanstack/react-query@5?external=react"
+    }
+  }
+</script>
+<link rel="stylesheet" href="http://localhost:8797/@iterate-com/ui?repository=mmkal/iterate-packages-spike&ref=main&path=./styles.css" />
+<div id="root" class="flex h-screen flex-col"></div>
+<script type="module">
+  import { createElement, useState } from "react";
+  import { createRoot } from "react-dom/client";
+  import htm from "htm";
+  import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+  import { ContextView } from "@iterate-com/ui/components/context-view/context-view";
+
+  const html = htm.bind(createElement);
+  const at = (s) => new Date(Date.UTC(2026, 9, 2, 13, 0, s)).toISOString();
+  const sample = [
+    { offset: 1, type: "events.iterate.com/itx/created", createdAt: at(0), payload: { path: "/agents/demo" }, source: { platform: true } },
+    { offset: 2, type: "chat/message-sent", createdAt: at(4), payload: { text: "What's on the calendar tomorrow?" }, source: { principal: { actor: "user:misha" } } },
+    { offset: 3, type: "chat/message-sent", createdAt: at(8), payload: { text: "One thing: a huddle with Jonas at 11." }, source: { processor: { slug: "agent", version: "1" } } },
+  ];
+
+  function App() {
+    const [state, setState] = useState({});
+    // a hook from a library esm.sh built: with a second React it would throw on its first render
+    const events = useQuery({ queryKey: ["events"], queryFn: () => new Promise((resolve) => setTimeout(() => resolve(sample), 300)) });
+    const context = { events: events.data || [], caughtUp: events.isSuccess, processors: { rows: [] }, presence: { actors: [], rpcStubs: [] }, liveState: {} };
+    return html`<${ContextView} title=${`/agents/demo · react-query ${events.status}`} context=${context} state=${state}
+      onStateChange=${(patch) => setState((s) => ({ ...s, ...patch }))} className="min-h-0 flex-1" />`;
+  }
+  createRoot(document.getElementById("root")).render(html`<${QueryClientProvider} client=${new QueryClient()}><${App} /><//>`);
+</script>
